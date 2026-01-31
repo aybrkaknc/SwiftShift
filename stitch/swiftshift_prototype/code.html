@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>SwiftShift Prototype</title>
+    
+    <!-- React & React Router -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/history@5/umd/history.development.js"></script>
+    <script src="https://unpkg.com/react-router@6.3.0/umd/react-router.development.js"></script>
+    <script src="https://unpkg.com/react-router-dom@6.3.0/umd/react-router-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+    <!-- Theme Configuration -->
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#f4ab25", // Gold (Main)
+              "primary-success": "#0df259", // Green (Success Toast)
+              "primary-error": "#ec1313", // Red (Error Toast)
+              
+              "background-light": "#f8f7f5",
+              "background-dark": "#18181B",
+              "surface-dark": "#27272A",
+              "border-dark": "#3F3F46",
+              
+              // Screen 2 specific variations
+              "bg-dark-2": "#221c10",
+              "surface-dark-2": "#2d261a",
+              "border-dark-2": "#393328",
+            },
+            fontFamily: {
+              "display": ["Inter", "sans-serif"]
+            },
+            boxShadow: {
+                'glow': '0 0 15px -3px rgba(244, 171, 37, 0.3)',
+            },
+            animation: {
+                'spring-in': 'spring-slide-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                'progress': 'progress-shrink 4000ms linear forwards',
+            },
+            keyframes: {
+                'spring-slide-in': {
+                    '0%': { transform: 'translateX(100%) scale(0.9)', opacity: '0' },
+                    '60%': { transform: 'translateX(-5%) scale(1.02)', opacity: '1' },
+                    '80%': { transform: 'translateX(2%) scale(0.98)' },
+                    '100%': { transform: 'translateX(0) scale(1)' },
+                },
+                'progress-shrink': {
+                    'from': { width: '100%' },
+                    'to': { width: '0%' },
+                }
+            }
+          },
+        },
+      }
+    </script>
+
+    <style>
+        /* Global Scrollbar overrides */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #544b3b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #786b54; }
+        
+        .glass-panel {
+            background: rgba(34, 28, 16, 0.95);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .website-mockup-bg {
+            background-color: #f3f4f6;
+            background-image: 
+                linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
+                linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        
+        /* Utility for centering content in the React root */
+        #root {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body class="bg-black text-white min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { createRoot } = ReactDOM;
+        const { MemoryRouter, Routes, Route, Link, useNavigate, useLocation } = ReactRouterDOM;
+
+        // --- COMPONENTS ---
+
+        // 1. Onboarding Screen
+        const OnboardingScreen = () => {
+            const navigate = useNavigate();
+
+            return (
+                <div className="flex items-center justify-center min-h-screen bg-black font-display p-4">
+                    <div className="w-[360px] min-h-[480px] bg-background-light dark:bg-background-dark flex flex-col relative rounded-lg border border-[#333] shadow-2xl overflow-hidden">
+                        {/* Header */}
+                        <header className="flex items-center justify-between border-b border-[#27272A] px-5 py-4 bg-background-dark/50 backdrop-blur-sm z-10 sticky top-0">
+                            <div className="flex items-center gap-2 text-white">
+                                <div className="size-6 text-primary flex items-center justify-center">
+                                    <span className="material-symbols-outlined" style={{fontSize: '24px'}}>bolt</span>
+                                </div>
+                                <h2 className="text-white text-base font-bold tracking-tight">SwiftShift</h2>
+                            </div>
+                            <button className="text-zinc-500 hover:text-white transition-colors">
+                                <span className="material-symbols-outlined" style={{fontSize: '20px'}}>settings</span>
+                            </button>
+                        </header>
+
+                        {/* Main Content Area */}
+                        <main className="flex-1 flex flex-col px-5 py-6">
+                            {/* Hero Icon */}
+                            <div className="flex justify-center mb-6">
+                                <div className="size-16 rounded-full bg-gradient-to-br from-primary/20 to-transparent flex items-center justify-center ring-1 ring-primary/20 shadow-glow">
+                                    <span className="material-symbols-outlined text-primary" style={{fontSize: '32px'}}>rocket_launch</span>
+                                </div>
+                            </div>
+
+                            {/* Page Heading */}
+                            <div className="flex flex-col gap-2 mb-8 text-center">
+                                <h1 className="text-white text-2xl font-bold tracking-tight">Connect Telegram</h1>
+                                <p className="text-zinc-400 text-sm font-normal leading-relaxed">
+                                    Enter your bot token to start shifting content instantly.
+                                </p>
+                            </div>
+
+                            {/* Form */}
+                            <div className="flex flex-col gap-6">
+                                {/* Input Field */}
+                                <div className="flex flex-col gap-2 group">
+                                    <label className="text-zinc-300 text-xs font-medium uppercase tracking-wider ml-1" htmlFor="token">Telegram Bot Token</label>
+                                    <div className="relative">
+                                        <input 
+                                            className="w-full bg-[#27272A] text-white text-sm rounded-lg border border-[#3F3F46] focus:border-primary focus:ring-1 focus:ring-primary focus:shadow-glow placeholder:text-zinc-600 px-4 py-3.5 transition-all duration-200 outline-none" 
+                                            id="token" 
+                                            placeholder="123456:ABC-DEF1234..." 
+                                            type="text"
+                                        />
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none">
+                                            <span className="material-symbols-outlined" style={{fontSize: '20px'}}>key</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Action Button */}
+                                <button 
+                                    onClick={() => navigate('/app')}
+                                    className="w-full bg-gradient-to-r from-primary to-[#DDA033] hover:to-primary text-background-dark font-bold text-sm py-3.5 px-6 rounded-lg shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all duration-300 transform active:scale-[0.98] flex items-center justify-center gap-2 group">
+                                    <span>Connect & Detect</span>
+                                    <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform" style={{fontSize: '18px'}}>arrow_forward</span>
+                                </button>
+
+                                {/* Helper Link */}
+                                <div className="text-center mt-2">
+                                    <a className="inline-flex items-center gap-1.5 text-zinc-500 hover:text-primary text-xs transition-colors duration-200 group" href="#">
+                                        <span className="material-symbols-outlined" style={{fontSize: '14px'}}>help</span>
+                                        <span className="group-hover:underline decoration-primary/50 underline-offset-2">Where do I get my token?</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </main>
+
+                        {/* Footer */}
+                        <footer className="px-5 py-3 border-t border-[#27272A] flex justify-between items-center text-[10px] text-zinc-600">
+                            <span className="flex items-center gap-1.5">
+                                <span className="size-1.5 rounded-full bg-zinc-600"></span>
+                                Disconnected
+                            </span>
+                            <span>v1.0.4</span>
+                        </footer>
+                    </div>
+                </div>
+            );
+        };
+
+        // 2. Main Interface Screen
+        const MainInterfaceScreen = () => {
+            const navigate = useNavigate();
+            const [selected, setSelected] = useState('design-inspo');
+
+            return (
+                <div className="bg-black flex items-center justify-center min-h-screen p-4 font-display antialiased text-white">
+                    <div className="relative w-[360px] h-[600px] flex flex-col bg-bg-dark-2 overflow-hidden shadow-2xl rounded-xl border border-border-dark-2">
+                        {/* Header */}
+                        <header className="glass-panel sticky top-0 z-30 flex items-center justify-between px-5 py-3 border-b border-border-dark-2">
+                            <div className="flex items-center gap-2.5">
+                                <div className="size-6 text-primary flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-[24px]">bolt</span>
+                                </div>
+                                <h1 className="text-white text-base font-bold tracking-tight">SwiftShift</h1>
+                            </div>
+                            <button className="flex items-center justify-center w-8 h-8 rounded-full text-[#baaf9c] hover:text-white hover:bg-surface-dark-2 transition-colors">
+                                <span className="material-symbols-outlined text-[20px]">settings</span>
+                            </button>
+                        </header>
+
+                        {/* Scrollable Content */}
+                        <div className="flex-1 overflow-y-auto flex flex-col pb-20">
+                            {/* Connection Status */}
+                            <div className="pt-4 pb-2 px-5 flex items-center justify-center gap-2">
+                                <div className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary shadow-[0_0_8px_rgba(244,171,37,0.8)]"></span>
+                                </div>
+                                <p className="text-[#baaf9c] text-xs font-medium tracking-wide">Connected: <span className="text-white">@SwiftBot</span></p>
+                            </div>
+
+                            {/* Search Bar */}
+                            <div className="px-4 py-3 sticky top-[0px] z-20 bg-bg-dark-2/95 backdrop-blur-sm">
+                                <div className="relative group">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span className="material-symbols-outlined text-[#baaf9c] text-[20px] group-focus-within:text-primary transition-colors">search</span>
+                                    </div>
+                                    <input className="block w-full pl-10 pr-3 py-2.5 border-none rounded-lg bg-surface-dark-2 text-sm text-white placeholder-[#6b6356] focus:ring-1 focus:ring-primary focus:bg-[#2a2418] transition-all" placeholder="Filter channels..." type="text"/>
+                                </div>
+                            </div>
+
+                            {/* Section Header */}
+                            <div className="px-5 pt-2 pb-2">
+                                <h3 className="text-[#baaf9c] text-xs font-semibold uppercase tracking-wider">Select Destination</h3>
+                            </div>
+
+                            {/* Channel List */}
+                            <div className="px-4 flex flex-col gap-2" role="radiogroup">
+                                {/* Dynamic List Item Component */}
+                                {[
+                                    {id: 'design-inspo', name: '#Design-Inspo', meta: 'Last active: 2m ago', icon: 'palette'},
+                                    {id: 'tech-news', name: '#Tech-News', meta: '1.2k subscribers', icon: 'newspaper'},
+                                    {id: 'saved-messages', name: 'Saved Messages', meta: 'Private cloud', icon: 'bookmark'},
+                                    {id: 'project-alpha', name: '#Project-Alpha', meta: 'Work group', icon: 'work'},
+                                    {id: 'memes', name: '#Random-Memes', meta: 'Just for fun', icon: 'mood'},
+                                ].map((item) => (
+                                    <label key={item.id} 
+                                        onClick={() => setSelected(item.id)}
+                                        className={`relative flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all group ${selected === item.id ? 'border-primary/50 bg-surface-dark-2/50' : 'border-transparent hover:border-[#393328] hover:bg-surface-dark-2'}`}
+                                    >
+                                        <div className="flex items-center justify-center">
+                                            <input 
+                                                checked={selected === item.id} 
+                                                className="peer sr-only" 
+                                                name="channel" 
+                                                type="radio" 
+                                                value={item.id}
+                                                readOnly
+                                            />
+                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${selected === item.id ? 'border-primary bg-primary' : 'border-[#544b3b] group-hover:border-[#baaf9c]'}`}>
+                                                <div className={`w-2 h-2 rounded-full bg-bg-dark-2 transition-opacity ${selected === item.id ? 'opacity-100' : 'opacity-0'}`}></div>
+                                            </div>
+                                            {selected === item.id && <div className="absolute inset-0 border-2 border-primary rounded-lg opacity-100 pointer-events-none"></div>}
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <p className={`text-sm font-semibold transition-colors ${selected === item.id ? 'text-white group-hover:text-primary' : 'text-[#e5e5e5] font-medium group-hover:text-white'}`}>{item.name}</p>
+                                            <p className={`text-[10px] ${selected === item.id ? 'text-[#baaf9c]' : 'text-[#6b6356]'}`}>{item.meta}</p>
+                                        </div>
+                                        <div className={`ml-auto transition-colors ${selected === item.id ? 'text-[#baaf9c]' : 'text-[#6b6356] group-hover:text-[#baaf9c]'}`}>
+                                            <span className="material-symbols-outlined text-[18px]">{item.icon}</span>
+                                        </div>
+                                    </label>
+                                ))}
+                                <div className="h-4"></div>
+                            </div>
+                        </div>
+
+                        {/* Footer Action */}
+                        <div className="glass-panel absolute bottom-0 left-0 w-full p-4 border-t border-border-dark-2 z-30">
+                            <button 
+                                onClick={() => navigate('/success')}
+                                className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-[#e09a1e] active:bg-[#cc8b1a] text-[#1a150c] font-bold text-sm h-11 rounded-lg transition-all shadow-lg shadow-primary/20">
+                                <span className="material-symbols-outlined text-[20px]">send</span>
+                                <span>Send to Telegram</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 3. Success Toast Screen
+        const SuccessToastScreen = () => {
+            const navigate = useNavigate();
+
+            // Simulate auto-dismiss
+            useEffect(() => {
+                const timer = setTimeout(() => {
+                    navigate('/app');
+                }, 4000);
+                return () => clearTimeout(timer);
+            }, [navigate]);
+
+            return (
+                <div className="relative flex min-h-screen w-full flex-col font-display antialiased overflow-hidden">
+                    {/* Mock Background */}
+                    <div className="absolute inset-0 z-0 website-mockup-bg flex flex-col p-10 gap-6 opacity-80 pointer-events-none">
+                        <h1 className="text-4xl font-bold text-gray-800">Awesome Article Title</h1>
+                        <div className="h-4 w-2/3 bg-gray-300 rounded"></div>
+                        <div className="h-4 w-full bg-gray-300 rounded"></div>
+                        <div className="h-4 w-5/6 bg-gray-300 rounded"></div>
+                        <div className="h-64 w-full bg-gray-300 rounded-xl mt-4"></div>
+                        <div className="h-4 w-full bg-gray-300 rounded"></div>
+                        <div className="h-4 w-4/5 bg-gray-300 rounded"></div>
+                    </div>
+
+                    {/* Toast */}
+                    <div className="fixed bottom-8 right-8 z-[2147483647] flex flex-col items-end gap-4 pointer-events-auto">
+                        <div className="animate-spring-in relative overflow-hidden w-[380px] rounded-xl bg-[#102216]/80 dark:bg-black/70 backdrop-blur-xl shadow-2xl border border-white/10 ring-1 ring-white/5">
+                            {/* Content */}
+                            <div className="flex items-center justify-between p-4 gap-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="relative flex items-center justify-center shrink-0 size-8 rounded-full bg-primary-success/20 text-primary-success">
+                                        <span className="material-symbols-outlined text-[20px] font-bold">check_circle</span>
+                                        <div className="absolute inset-0 rounded-full bg-primary-success/20 blur-sm animate-pulse"></div>
+                                    </div>
+                                    <div className="flex flex-col justify-center">
+                                        <p className="text-white text-[15px] font-medium leading-tight">Link sent successfully</p>
+                                        <p className="text-white/50 text-xs font-normal">Saved to "Read Later"</p>
+                                    </div>
+                                </div>
+                                {/* Undo */}
+                                <button 
+                                    onClick={() => navigate('/app')}
+                                    className="group relative flex items-center justify-center h-8 px-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5 hover:border-white/10 cursor-pointer">
+                                    <span className="text-primary-success text-xs font-medium tracking-wide group-hover:text-primary-success/90 transition-colors">Undo</span>
+                                </button>
+                            </div>
+                            {/* Progress */}
+                            <div className="absolute bottom-0 left-0 right-0 h-[2px] w-full bg-white/5">
+                                <div className="h-full bg-primary-success animate-progress shadow-[0_0_10px_rgba(13,242,89,0.5)]"></div>
+                            </div>
+                            {/* Close */}
+                            <button onClick={() => navigate('/app')} className="absolute top-1 right-1 p-1 text-white/20 hover:text-white/60 transition-colors rounded-full">
+                                <span className="material-symbols-outlined text-[16px]">close</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 4. Error Toast Screen
+        const ErrorToastScreen = () => {
+            const navigate = useNavigate();
+
+            return (
+                <div className="bg-background-light dark:bg-[#221010] font-display antialiased overflow-hidden min-h-screen relative selection:bg-primary-error/30 selection:text-white">
+                    {/* Mock Website */}
+                    <div className="w-full h-full opacity-40 dark:opacity-20 pointer-events-none filter blur-[2px] fixed inset-0 z-0">
+                        <div className="grid grid-cols-12 gap-6 p-8 h-full">
+                            <div className="col-span-2 hidden md:block bg-gray-200 dark:bg-gray-800 rounded-lg h-full"></div>
+                            <div className="col-span-12 md:col-span-10 flex flex-col gap-6">
+                                <div className="h-16 w-full bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+                                <div className="h-64 w-full bg-gray-300 dark:bg-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 opacity-20"></div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-6">
+                                    {[...Array(6)].map((_, i) => <div key={i} className="h-40 bg-gray-200 dark:bg-gray-800 rounded-lg"></div>)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Toast */}
+                    <div className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-[99999] w-full max-w-[400px] animate-[slideIn_0.5s_ease-out]">
+                        <div className="group relative overflow-hidden rounded-lg bg-[#1a0f0f]/90 backdrop-blur-xl border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.5)] hover:shadow-[0_8px_40px_rgba(236,19,19,0.15)] transition-all duration-300">
+                            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-primary-error shadow-[0_0_15px_rgba(236,19,19,0.8)]"></div>
+                            <div className="flex items-start p-5 gap-4 relative z-10">
+                                <div className="flex-shrink-0 relative">
+                                    <div className="absolute inset-0 bg-primary-error/20 blur-md rounded-full"></div>
+                                    <div className="relative flex items-center justify-center w-10 h-10 rounded-lg bg-primary-error/10 border border-primary-error/20 text-primary-error">
+                                        <span className="material-symbols-outlined" style={{fontSize: '24px'}}>error</span>
+                                    </div>
+                                </div>
+                                <div className="flex-1 min-w-0 pt-0.5">
+                                    <div className="flex items-center justify-between gap-2 mb-1">
+                                        <h3 className="text-sm font-bold text-white tracking-wide uppercase font-display">Connection Error</h3>
+                                        <span className="text-[10px] font-mono text-white/40">ERR_04</span>
+                                    </div>
+                                    <p className="text-sm text-gray-300 font-medium leading-relaxed mb-3">
+                                        Token invalid or expired. Please re-authenticate to continue sharing content.
+                                    </p>
+                                    <div className="flex items-center gap-4">
+                                        <button 
+                                            onClick={() => navigate('/')}
+                                            className="text-xs font-semibold text-primary-error hover:text-red-400 hover:underline decoration-primary-error/50 underline-offset-4 transition-colors flex items-center gap-1 group/link">
+                                            Update Token
+                                            <span className="material-symbols-outlined text-[14px] group-hover/link:translate-x-0.5 transition-transform">arrow_forward</span>
+                                        </button>
+                                        <button onClick={() => navigate('/app')} className="text-xs font-medium text-gray-500 hover:text-white transition-colors">Dismiss</button>
+                                    </div>
+                                </div>
+                                <button onClick={() => navigate('/app')} className="flex-shrink-0 -mr-1 -mt-1 text-gray-500 hover:text-white transition-colors rounded-full p-1 hover:bg-white/5">
+                                    <span className="material-symbols-outlined" style={{fontSize: '20px'}}>close</span>
+                                </button>
+                            </div>
+                            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-white/5">
+                                <div className="h-full bg-primary-error shadow-[0_-2px_10px_rgba(236,19,19,0.8)] animate-progress origin-left"></div>
+                            </div>
+                            <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, #fff 10px, #fff 11px)'}}></div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 5. Resolver Modal Screen
+        const ResolverModalScreen = () => {
+            const navigate = useNavigate();
+
+            return (
+                <div className="relative min-h-screen w-full bg-background-light dark:bg-background-dark overflow-hidden font-display flex items-center justify-center">
+                    {/* Background */}
+                    <div className="absolute inset-0 z-0 opacity-40 pointer-events-none" style={{backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuBUMMXaRo8lCSbpHABstof_2JAuZxxDfSRwr56rrzFIXMzRgXF6swY8bcHsfIQJAHhvpNrpyFz0nY-lb0_D2uOgQpCagBDSXrCYZ_sTQjXZd2Qp7CoSn6lVj3sac2PDoetCpp4MvNM0tsFiMzrItaIqhgbCeCE1dzT-RnbS0ErCNj21vAbsY_PhmJaiOa-K8_9S3jgyzVZAYLMF1I5JNZDoRFHLCY3ktReXvjOtMZLdyxMZURgWZXpZR91HAITOFVzetSJz-x5-mns")', backgroundSize: 'cover', backgroundPosition: 'center'}}></div>
+                    
+                    {/* Backdrop */}
+                    <div className="absolute inset-0 z-10 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+                        {/* Modal */}
+                        <div className="relative w-full max-w-md flex flex-col items-center bg-surface-dark rounded-xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] border border-white/5 p-8 overflow-hidden transform transition-all duration-300 scale-100">
+                            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-70"></div>
+                            
+                            <div className="mb-6 flex items-center justify-center h-16 w-16 rounded-full bg-primary/10 text-primary ring-1 ring-primary/20">
+                                <span className="material-symbols-outlined text-4xl">folder_zip</span>
+                            </div>
+                            
+                            <div className="flex flex-col items-center text-center gap-2 mb-8">
+                                <h2 className="text-white tracking-tight text-2xl font-bold leading-tight">File Too Large</h2>
+                                <p className="text-gray-400 text-base font-normal leading-relaxed max-w-[320px]">
+                                    This file is <span className="text-primary font-medium">50MB</span>. Telegram direct upload limit is exceeded. Send as a link instead?
+                                </p>
+                            </div>
+                            
+                            <div className="w-full flex flex-col gap-3">
+                                <button 
+                                    onClick={() => navigate('/success')}
+                                    className="group relative w-full flex cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-6 bg-gradient-to-b from-[#f4c025] to-[#dcb320] text-[#181611] text-base font-bold leading-normal tracking-[0.015em] shadow-[0_0_15px_rgba(244,192,37,0.3)] hover:shadow-[0_0_20px_rgba(244,192,37,0.5)] transition-all duration-200">
+                                    <span className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                                    <span className="truncate flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-[20px]">link</span>
+                                        Yes, Send Link
+                                    </span>
+                                </button>
+                                <button 
+                                    onClick={() => navigate('/app')}
+                                    className="w-full flex cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-transparent text-gray-400 hover:text-white text-sm font-medium leading-normal tracking-[0.015em] transition-colors duration-200">
+                                    <span className="truncate">Cancel</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Navigation Menu
+        const NavMenu = () => {
+            const location = useLocation();
+            const links = [
+                { path: '/', label: 'Onboarding' },
+                { path: '/app', label: 'Main App' },
+                { path: '/success', label: 'Success' },
+                { path: '/error', label: 'Error' },
+                { path: '/modal', label: 'Modal' },
+            ];
+
+            return (
+                <div className="fixed bottom-0 left-0 right-0 z-[100000] flex justify-center p-2 pointer-events-none">
+                    <div className="bg-zinc-900/90 backdrop-blur-md border border-zinc-700 rounded-full px-4 py-2 flex gap-4 shadow-xl pointer-events-auto">
+                        {links.map(l => (
+                            <Link 
+                                key={l.path} 
+                                to={l.path}
+                                className={`text-xs font-medium px-2 py-1 rounded transition-colors ${location.pathname === l.path ? 'bg-primary text-black' : 'text-zinc-400 hover:text-white'}`}
+                            >
+                                {l.label}
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            return (
+                <MemoryRouter>
+                    <NavMenu />
+                    <Routes>
+                        <Route path="/" element={<OnboardingScreen />} />
+                        <Route path="/app" element={<MainInterfaceScreen />} />
+                        <Route path="/success" element={<SuccessToastScreen />} />
+                        <Route path="/error" element={<ErrorToastScreen />} />
+                        <Route path="/modal" element={<ResolverModalScreen />} />
+                    </Routes>
+                </MemoryRouter>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

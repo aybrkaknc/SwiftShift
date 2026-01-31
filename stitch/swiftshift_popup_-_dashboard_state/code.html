@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SwiftShift Popup</title>
+<!-- Fonts and Icons -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f4ab25",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#221c10",
+                        "surface-dark": "#2d261a", // Slightly lighter for cards/inputs
+                        "border-dark": "#393328",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom Scrollbar for WebKit */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #544b3b; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #786b54; 
+        }
+        
+        /* Hide scrollbar for layout container but keep functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+
+        /* Glassmorphism utilities */
+        .glass-panel {
+            background: rgba(34, 28, 16, 0.95);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+    </style>
+</head>
+<body class="bg-black flex items-center justify-center min-h-screen p-4 font-display antialiased text-white">
+<!-- Popup Container (Simulating 360px Chrome Extension) -->
+<div class="relative w-[360px] h-[600px] flex flex-col bg-background-dark overflow-hidden shadow-2xl rounded-xl border border-border-dark">
+<!-- Header -->
+<header class="glass-panel sticky top-0 z-30 flex items-center justify-between px-5 py-3 border-b border-border-dark">
+<div class="flex items-center gap-2.5">
+<div class="size-6 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">bolt</span>
+</div>
+<h1 class="text-white text-base font-bold tracking-tight">SwiftShift</h1>
+</div>
+<button class="flex items-center justify-center w-8 h-8 rounded-full text-[#baaf9c] hover:text-white hover:bg-surface-dark transition-colors">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+</header>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col pb-20">
+<!-- Connection Status -->
+<div class="pt-4 pb-2 px-5 flex items-center justify-center gap-2">
+<div class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary shadow-[0_0_8px_rgba(244,171,37,0.8)]"></span>
+</div>
+<p class="text-[#baaf9c] text-xs font-medium tracking-wide">Connected: <span class="text-white">@SwiftBot</span></p>
+</div>
+<!-- Search Bar -->
+<div class="px-4 py-3 sticky top-[57px] z-20 bg-background-dark/95 backdrop-blur-sm">
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-[#baaf9c] text-[20px] group-focus-within:text-primary transition-colors">search</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2.5 border-none rounded-lg bg-surface-dark text-sm text-white placeholder-[#6b6356] focus:ring-1 focus:ring-primary focus:bg-[#2a2418] transition-all" placeholder="Filter channels..." type="text"/>
+</div>
+</div>
+<!-- Section Header -->
+<div class="px-5 pt-2 pb-2">
+<h3 class="text-[#baaf9c] text-xs font-semibold uppercase tracking-wider">Select Destination</h3>
+</div>
+<!-- Channel List -->
+<div class="px-4 flex flex-col gap-2" role="radiogroup">
+<!-- Option 1: Selected -->
+<label class="relative flex items-center gap-3 p-3 rounded-lg border border-primary/50 bg-surface-dark/50 cursor-pointer hover:bg-surface-dark transition-all group">
+<div class="flex items-center justify-center">
+<input checked="" class="peer sr-only" name="channel" type="radio" value="design-inspo"/>
+<div class="w-5 h-5 rounded-full border-2 border-[#544b3b] peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center transition-all">
+<div class="w-2 h-2 rounded-full bg-background-dark opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+</div>
+<!-- Needed for sibling selector logic if not nesting input inside custom radio div, but here we use simple structure -->
+<div class="absolute inset-0 border-2 border-primary rounded-lg opacity-100 pointer-events-none"></div>
+</div>
+<div class="flex flex-col">
+<p class="text-white text-sm font-semibold group-hover:text-primary transition-colors">#Design-Inspo</p>
+<p class="text-[#baaf9c] text-[10px]">Last active: 2m ago</p>
+</div>
+<div class="ml-auto text-[#baaf9c]">
+<span class="material-symbols-outlined text-[18px]">palette</span>
+</div>
+</label>
+<!-- Option 2 -->
+<label class="relative flex items-center gap-3 p-3 rounded-lg border border-transparent hover:border-[#393328] hover:bg-surface-dark cursor-pointer transition-all group">
+<div class="flex items-center justify-center">
+<input class="peer sr-only" name="channel" type="radio" value="tech-news"/>
+<div class="w-5 h-5 rounded-full border-2 border-[#544b3b] group-hover:border-[#baaf9c] peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center transition-all">
+<div class="w-2 h-2 rounded-full bg-background-dark opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+</div>
+</div>
+<div class="flex flex-col">
+<p class="text-[#e5e5e5] text-sm font-medium group-hover:text-white transition-colors">#Tech-News</p>
+<p class="text-[#6b6356] text-[10px]">1.2k subscribers</p>
+</div>
+<div class="ml-auto text-[#6b6356] group-hover:text-[#baaf9c] transition-colors">
+<span class="material-symbols-outlined text-[18px]">newspaper</span>
+</div>
+</label>
+<!-- Option 3 -->
+<label class="relative flex items-center gap-3 p-3 rounded-lg border border-transparent hover:border-[#393328] hover:bg-surface-dark cursor-pointer transition-all group">
+<div class="flex items-center justify-center">
+<input class="peer sr-only" name="channel" type="radio" value="saved-messages"/>
+<div class="w-5 h-5 rounded-full border-2 border-[#544b3b] group-hover:border-[#baaf9c] peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center transition-all">
+<div class="w-2 h-2 rounded-full bg-background-dark opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+</div>
+</div>
+<div class="flex flex-col">
+<p class="text-[#e5e5e5] text-sm font-medium group-hover:text-white transition-colors">Saved Messages</p>
+<p class="text-[#6b6356] text-[10px]">Private cloud</p>
+</div>
+<div class="ml-auto text-[#6b6356] group-hover:text-[#baaf9c] transition-colors">
+<span class="material-symbols-outlined text-[18px]">bookmark</span>
+</div>
+</label>
+<!-- Option 4 -->
+<label class="relative flex items-center gap-3 p-3 rounded-lg border border-transparent hover:border-[#393328] hover:bg-surface-dark cursor-pointer transition-all group">
+<div class="flex items-center justify-center">
+<input class="peer sr-only" name="channel" type="radio" value="project-alpha"/>
+<div class="w-5 h-5 rounded-full border-2 border-[#544b3b] group-hover:border-[#baaf9c] peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center transition-all">
+<div class="w-2 h-2 rounded-full bg-background-dark opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+</div>
+</div>
+<div class="flex flex-col">
+<p class="text-[#e5e5e5] text-sm font-medium group-hover:text-white transition-colors">#Project-Alpha</p>
+<p class="text-[#6b6356] text-[10px]">Work group</p>
+</div>
+<div class="ml-auto text-[#6b6356] group-hover:text-[#baaf9c] transition-colors">
+<span class="material-symbols-outlined text-[18px]">work</span>
+</div>
+</label>
+<!-- Option 5 -->
+<label class="relative flex items-center gap-3 p-3 rounded-lg border border-transparent hover:border-[#393328] hover:bg-surface-dark cursor-pointer transition-all group">
+<div class="flex items-center justify-center">
+<input class="peer sr-only" name="channel" type="radio" value="memes"/>
+<div class="w-5 h-5 rounded-full border-2 border-[#544b3b] group-hover:border-[#baaf9c] peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center transition-all">
+<div class="w-2 h-2 rounded-full bg-background-dark opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+</div>
+</div>
+<div class="flex flex-col">
+<p class="text-[#e5e5e5] text-sm font-medium group-hover:text-white transition-colors">#Random-Memes</p>
+<p class="text-[#6b6356] text-[10px]">Just for fun</p>
+</div>
+<div class="ml-auto text-[#6b6356] group-hover:text-[#baaf9c] transition-colors">
+<span class="material-symbols-outlined text-[18px]">mood</span>
+</div>
+</label>
+<!-- Spacer for bottom scroll -->
+<div class="h-4"></div>
+</div>
+</div>
+<!-- Footer Action -->
+<div class="glass-panel absolute bottom-0 left-0 w-full p-4 border-t border-border-dark z-30">
+<button class="w-full flex items-center justify-center gap-2 bg-primary hover:bg-[#e09a1e] active:bg-[#cc8b1a] text-[#1a150c] font-bold text-sm h-11 rounded-lg transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-[20px]">send</span>
+<span>Send to Telegram</span>
+</button>
+</div>
+</div>
+</body></html>

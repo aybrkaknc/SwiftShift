@@ -1,0 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-white antialiased;
+  }
+}
+
+@layer components {
+  .ripple-effect {
+    @apply relative flex items-center justify-center overflow-hidden;
+  }
+
+  .ripple-effect::after {
+    content: "";
+    @apply absolute w-full h-full rounded-full bg-primary/20 opacity-0 transition-all duration-500;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+  }
+
+  .ripple-effect:active::after {
+    @apply opacity-100 duration-0;
+    transform: translate(-50%, -50%) scale(2);
+  }
+}

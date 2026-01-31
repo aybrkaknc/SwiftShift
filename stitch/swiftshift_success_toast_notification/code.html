@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SwiftShift Success Toast</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0df259",
+                        "background-light": "#f5f8f6",
+                        "background-dark": "#102216",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                    backdropBlur: {
+                        'xs': '2px',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        /* Simulating the host website background */
+        .website-mockup-bg {
+            background-color: #f3f4f6;
+            background-image: 
+                linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
+                linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        /* Spring animation classes for the toast entry */
+        @keyframes spring-slide-in {
+            0% {
+                transform: translateX(100%) scale(0.9);
+                opacity: 0;
+            }
+            60% {
+                transform: translateX(-5%) scale(1.02);
+                opacity: 1;
+            }
+            80% {
+                transform: translateX(2%) scale(0.98);
+            }
+            100% {
+                transform: translateX(0) scale(1);
+            }
+        }
+
+        .animate-spring-in {
+            animation: spring-slide-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Progress bar animation */
+        @keyframes progress-shrink {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+        
+        .animate-progress {
+            animation: progress-shrink 4000ms linear forwards;
+        }
+    </style>
+</head>
+<body class="relative flex min-h-screen w-full flex-col font-display antialiased overflow-hidden">
+<!-- MOCK WEBSITE CONTENT (Background Context) -->
+<div class="absolute inset-0 z-0 website-mockup-bg flex flex-col p-10 gap-6 opacity-80 pointer-events-none">
+<!-- Mock text content to show transparency effect -->
+<h1 class="text-4xl font-bold text-gray-800">Awesome Article Title</h1>
+<div class="h-4 w-2/3 bg-gray-300 rounded"></div>
+<div class="h-4 w-full bg-gray-300 rounded"></div>
+<div class="h-4 w-5/6 bg-gray-300 rounded"></div>
+<div class="h-64 w-full bg-gray-300 rounded-xl mt-4" data-alt="Abstract placeholder for an article image or chart"></div>
+<div class="h-4 w-full bg-gray-300 rounded"></div>
+<div class="h-4 w-4/5 bg-gray-300 rounded"></div>
+</div>
+<!-- TOAST NOTIFICATION CONTAINER (Fixed Position) -->
+<!-- Ideally injected into shadow DOM, here represented as fixed overlay -->
+<div class="fixed bottom-8 right-8 z-[2147483647] flex flex-col items-end gap-4 pointer-events-none">
+<!-- THE TOAST COMPONENT -->
+<div class="pointer-events-auto animate-spring-in relative overflow-hidden w-[380px] rounded-xl bg-background-dark/80 dark:bg-black/70 backdrop-blur-xl shadow-2xl border border-white/10 ring-1 ring-white/5">
+<!-- Toast Content -->
+<div class="flex items-center justify-between p-4 gap-4">
+<div class="flex items-center gap-3">
+<!-- Animated Check Icon Container -->
+<div class="relative flex items-center justify-center shrink-0 size-8 rounded-full bg-primary/20 text-primary">
+<span class="material-symbols-outlined text-[20px] font-bold">check_circle</span>
+<!-- Subtle glow effect behind icon -->
+<div class="absolute inset-0 rounded-full bg-primary/20 blur-sm animate-pulse"></div>
+</div>
+<div class="flex flex-col justify-center">
+<p class="text-white text-[15px] font-medium leading-tight">Link sent successfully</p>
+<p class="text-white/50 text-xs font-normal">Saved to "Read Later"</p>
+</div>
+</div>
+<!-- Action Button -->
+<button class="group relative flex items-center justify-center h-8 px-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5 hover:border-white/10 cursor-pointer">
+<span class="text-primary text-xs font-medium tracking-wide group-hover:text-primary/90 transition-colors">Undo</span>
+</button>
+</div>
+<!-- Progress Bar (Auto Dismiss) -->
+<div class="absolute bottom-0 left-0 right-0 h-[2px] w-full bg-white/5">
+<div class="h-full bg-primary animate-progress shadow-[0_0_10px_rgba(13,242,89,0.5)]"></div>
+</div>
+<!-- Close Button (Absolute Top Right - Optional/Hover) -->
+<button class="absolute top-1 right-1 p-1 text-white/20 hover:text-white/60 transition-colors rounded-full">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+</div>
+</body></html>

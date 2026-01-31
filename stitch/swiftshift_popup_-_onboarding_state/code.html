@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SwiftShift Popup - Onboarding</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Theme Configuration -->
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#f4ab25",
+              "background-light": "#f8f7f5",
+              "background-dark": "#18181B", /* Adjusted for Midnight theme */
+              "surface-dark": "#27272A",
+              "border-dark": "#3F3F46",
+            },
+            fontFamily: {
+              "display": ["Inter", "sans-serif"]
+            },
+            boxShadow: {
+                'glow': '0 0 15px -3px rgba(244, 171, 37, 0.3)',
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #000; /* Outer background to emphasize popup */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        
+        /* Simulating Chrome Extension Popup Window */
+        .popup-container {
+            width: 360px;
+            height: auto;
+            min-height: 480px;
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+<body class="font-display">
+<!-- Popup Window Simulator -->
+<div class="popup-container bg-background-light dark:bg-background-dark flex flex-col relative rounded-lg">
+<!-- Header -->
+<header class="flex items-center justify-between border-b border-[#27272A] px-5 py-4 bg-background-dark/50 backdrop-blur-sm z-10 sticky top-0">
+<div class="flex items-center gap-2 text-white">
+<div class="size-6 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-size: 24px;">bolt</span>
+</div>
+<h2 class="text-white text-base font-bold tracking-tight">SwiftShift</h2>
+</div>
+<button class="text-zinc-500 hover:text-white transition-colors">
+<span class="material-symbols-outlined" style="font-size: 20px;">settings</span>
+</button>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col px-5 py-6">
+<!-- Hero Icon/Illustration Space -->
+<div class="flex justify-center mb-6">
+<div class="size-16 rounded-full bg-gradient-to-br from-primary/20 to-transparent flex items-center justify-center ring-1 ring-primary/20 shadow-glow">
+<span class="material-symbols-outlined text-primary" style="font-size: 32px;">rocket_launch</span>
+</div>
+</div>
+<!-- Page Heading -->
+<div class="flex flex-col gap-2 mb-8 text-center">
+<h1 class="text-white text-2xl font-bold tracking-tight">Connect Telegram</h1>
+<p class="text-zinc-400 text-sm font-normal leading-relaxed">
+                    Enter your bot token to start shifting content instantly.
+                </p>
+</div>
+<!-- Form -->
+<div class="flex flex-col gap-6">
+<!-- Input Field -->
+<div class="flex flex-col gap-2 group">
+<label class="text-zinc-300 text-xs font-medium uppercase tracking-wider ml-1" for="token">Telegram Bot Token</label>
+<div class="relative">
+<input class="w-full bg-[#27272A] text-white text-sm rounded-lg border border-[#3F3F46] focus:border-primary focus:ring-1 focus:ring-primary focus:shadow-glow placeholder:text-zinc-600 px-4 py-3.5 transition-all duration-200 outline-none" id="token" placeholder="123456:ABC-DEF1234..." type="text"/>
+<div class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none">
+<span class="material-symbols-outlined" style="font-size: 20px;">key</span>
+</div>
+</div>
+</div>
+<!-- Action Button -->
+<button class="w-full bg-gradient-to-r from-primary to-[#DDA033] hover:to-primary text-background-dark font-bold text-sm py-3.5 px-6 rounded-lg shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all duration-300 transform active:scale-[0.98] flex items-center justify-center gap-2 group">
+<span>Connect &amp; Detect</span>
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" style="font-size: 18px;">arrow_forward</span>
+</button>
+<!-- Helper Link -->
+<div class="text-center mt-2">
+<a class="inline-flex items-center gap-1.5 text-zinc-500 hover:text-primary text-xs transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined" style="font-size: 14px;">help</span>
+<span class="group-hover:underline decoration-primary/50 underline-offset-2">Where do I get my token?</span>
+</a>
+</div>
+</div>
+</main>
+<!-- Footer / Status Bar (Optional decoration) -->
+<footer class="px-5 py-3 border-t border-[#27272A] flex justify-between items-center text-[10px] text-zinc-600">
+<span class="flex items-center gap-1.5">
+<span class="size-1.5 rounded-full bg-zinc-600"></span>
+                Disconnected
+            </span>
+<span>v1.0.4</span>
+</footer>
+</div>
+</body></html>
