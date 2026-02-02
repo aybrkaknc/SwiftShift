@@ -1,7 +1,7 @@
 # 🚀 SwiftShift Kod Performans Analiz Raporu
 
 **Tarih:** 2026-02-02
-**Sürüm:** v0.3.0
+**Sürüm:** v0.3.1
 
 ---
 
@@ -21,9 +21,13 @@
 
 ## 2. 🧮 Algoritmik Karmaşıklık (Big O) Analizi
 
-### ⚠️ Tespit Edilen Darboğazlar
+### ✅ Çözülen Darboğazlar (v0.3.1)
 
 #### 1. `DashboardView` - Orphan Topics Hesaplaması
+- **Sorun:** O(N^2) Nested Loop.
+- **Çözüm:** `Set` kullanılarak O(N)'e indirildi. ✅
+
+#### 2. `RecentsService` - Ekleme İşlemi
 ```typescript
 const orphanTopics = filteredTargets.filter(t =>
     t.type === 'topic' &&
@@ -49,9 +53,13 @@ return all.sort((a, b) => b.timestamp - a.timestamp); // 🟡 Sort - O(N log N)
 
 ## 3. ⚛️ React Render Performansı
 
-### ⚠️ Gereksiz Render Durumları
+### ✅ Çözülen Render Sorunları (v0.3.1)
 
 #### 1. `DashboardView` - Computed Values
+- **Çözüm:** `useMemo` ile tüm hesaplamalar optimize edildi. ✅
+
+#### 2. `renderTargetSection` Fonksiyonu
+- **Çözüm:** `TargetSectionList` bileşeni oluşturuldu ve `React.memo` ile sarıldı. ✅
 - **Sorun:** `filteredTargets`, `childrenMap`, `orphanTopics` değişkenleri **her render'da** (örn. toast mesajı çıktığında veya modal açıldığında) yeniden hesaplanıyor.
 - **Çözüm:** `useMemo` hook'u kullanılarak sadece `targets` veya `filter` değiştiğinde hesaplanmalı.
 

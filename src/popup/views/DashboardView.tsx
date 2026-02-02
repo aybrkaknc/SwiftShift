@@ -1,9 +1,12 @@
 /**
  * DashboardView
- * Ana dashboard görünümü - Refaktör edilmiş versiyon.
+ * Ana dashboard görünümü - Optimize edilmiş versiyon (v0.3.1).
+ * - O(N) orphan topic tespiti
+ * - useMemo ve useCallback ile render optimizasyonu
+ * - TargetSectionList bileşeni kullanımı
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { TelegramTarget, UserProfile, StorageService } from '../../services/storage';
 import { TelegramService } from '../../services/telegram';
 import { RecentsService, RecentSend } from '../../services/recents';
@@ -12,10 +15,11 @@ import { LogService, LogEntry } from '../../services/logService';
 import { LogsView } from './LogsView';
 import { Search, Users, LogOut, RefreshCw, Plus } from 'lucide-react';
 import { ThemeToggle } from '../../components/ThemeToggle';
-import { TargetListItem } from '../components/TargetListItem';
 import { AddDestinationModal } from '../components/AddDestinationModal';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { TabBar, TabType } from '../components/TabBar';
+import { TargetSectionList } from '../components/TargetSectionList';
+import { ErrorService } from '../../services/errorService';
 
 interface DashboardViewProps {
     profile: UserProfile;
@@ -95,28 +99,86 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         });
     }, [targets]);
 
-    // === HANDLERS ===
-    const handleSelect = async (id: string) => {
+    // === MEMOIZED CALCULATIONS ===
+
+    const { filteredTargets, personal, parents, orphanTopics, childrenMap } = useMemo(() => {
+        // 1. Filter & Sort
+        const filtered = targets
+            .filter(t =>
+                t.name.toLowerCase().includes(filter.toLowerCase()) ||
+                t.username?.toLowerCase().includes(filter.toLowerCase())
+            )
+            .sort((a, b) => {
+                if (a.pinned === b.pinned) return 0;
+                return a.pinned ? -1 : 1;
+            });
+
+        // 2. Grouping
+        const personalList = filtered.filter(t => t.type === 'private');
+        const parentsList = filtered.filter(t =>
+            (t.type === 'channel' || t.type === 'group') && !t.parentId
+        );
+
+        // Map for children
+        const cMap = new Map<string, TelegramTarget[]>();
+        filtered
+            .filter(t => t.parentId)
+            .forEach(topic => {
+                const existing = cMap.get(topic.parentId!) || [];
+                existing.push(topic);
+                cMap.set(topic.parentId!, existing);
+            });
+
+        // 3. Orphan Topics Check - Optimized O(N) using Set
+        // Create a Set of parent IDs for O(1) lookup
+        const parentIds = new Set(targets.filter(t => !t.parentId).map(t => t.id));
+
+        const orphans = filtered.filter(t =>
+            t.type === 'topic' &&
+            t.parentId &&
+            !parentIds.has(t.parentId)
+        );
+
+        return {
+            filteredTargets: filtered,
+            personal: personalList,
+            parents: parentsList,
+            orphanTopics: orphans,
+            childrenMap: cMap
+        };
+    }, [targets, filter]); // Only re-calculate when targets or filter changes
+
+    // === HANDLERS (CALLBACKS) ===
+
+    const handleSelect = useCallback(async (id: string) => {
         if (editingId) return;
         setSelectedId(id);
         await StorageService.addRecentTarget(id);
         chrome.runtime.sendMessage({ type: 'REFRESH_MENU' });
-    };
+    }, [editingId]);
 
-    const startEditing = (target: TelegramTarget) => {
+    const startEditing = useCallback((target: TelegramTarget) => {
         setEditingId(target.id);
         setEditName(target.name);
-    };
+    }, []);
 
-    const saveEditing = () => {
+    const saveEditing = useCallback(() => {
         if (editingId && onRenameTarget) {
             onRenameTarget(editingId, editName);
         }
         setEditingId(null);
         setEditName('');
-    };
+    }, [editingId, editName, onRenameTarget]);
 
-    const handleSendDirect = async (targetId: string) => {
+    const cancelEditing = useCallback(() => {
+        setEditingId(null);
+    }, []);
+
+    const handleToggleExpand = useCallback((id: string) => {
+        setExpandedChannels(prev => ({ ...prev, [id]: !prev[id] }));
+    }, []);
+
+    const handleSendDirect = useCallback(async (targetId: string) => {
         if (isSending) return;
 
         const target = targets.find(t => t.id === targetId);
@@ -124,117 +186,148 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         setIsSending(true);
 
-        const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+        try {
+            const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
 
-        if (!tab?.url) {
-            const [fallbackTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (!fallbackTab?.url) {
+            if (!tab?.url) {
+                const [fallbackTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                if (!fallbackTab?.url) {
+                    setIsSending(false);
+                    return;
+                }
+            }
+
+            if (!tab?.id || !tab.url) {
                 setIsSending(false);
                 return;
             }
-        }
 
-        if (!tab?.id || !tab.url) {
-            setIsSending(false);
-            return;
-        }
+            const payload = {
+                chatId: targetId.includes(':') ? targetId.split(':')[0] : targetId,
+                threadId: target.threadId,
+                text: `${tab.title}\n${tab.url}`
+            };
 
-        const payload = {
-            chatId: targetId.includes(':') ? targetId.split(':')[0] : targetId,
-            threadId: target.threadId,
-            text: `${tab.title}\n${tab.url}`
-        };
+            const result = await TelegramService.sendPayloadSmart(profile.botToken, payload);
 
-        const result = await TelegramService.sendPayloadSmart(profile.botToken, payload);
-
-        setStatus({
-            message: result.success ? `Sent to ${target.name}` : `Error: ${result.error}`,
-            type: result.success ? 'success' : 'error'
-        });
-
-        if (result.success) {
-            await RecentsService.add({
-                type: 'link',
-                content: tab.url,
-                preview: tab.title || tab.url,
-                targetName: target.name,
-                targetId: target.id,
-                threadId: target.threadId
+            setStatus({
+                message: result.success ? `Sent to ${target.name}` : `Error: ${result.error}`,
+                type: result.success ? 'success' : 'error'
             });
+
+            if (result.success) {
+                await RecentsService.add({
+                    type: 'link',
+                    content: tab.url,
+                    preview: tab.title || tab.url,
+                    targetName: target.name,
+                    targetId: target.id,
+                    threadId: target.threadId
+                });
+
+                // ErrorService ile success log
+                await LogService.add({
+                    type: 'success',
+                    message: `Sent to ${target.name}`,
+                    targetName: target.name
+                });
+            } else {
+                // Error log
+                await ErrorService.handle(result.error || 'Send failed', 'DashboardView.sendDirect');
+            }
+
+            chrome.notifications.create({
+                type: 'basic',
+                iconUrl: 'icons/icon128.png',
+                title: result.success ? 'Sent Successfully' : 'Failed to Send',
+                message: result.success ? `Sent to ${target.name}` : (result.error || 'Unknown Error')
+            });
+
+            if (result.success) {
+                handleSelect(targetId);
+            }
+
+        } catch (error) {
+            await ErrorService.handle(error, 'DashboardView.sendDirect');
+        } finally {
+            setIsSending(false);
         }
+    }, [isSending, targets, profile.botToken, handleSelect]);
 
-        chrome.notifications.create({
-            type: 'basic',
-            iconUrl: 'icons/icon128.png',
-            title: result.success ? 'Sent Successfully' : 'Failed to Send',
-            message: result.success ? `Sent to ${target.name}` : (result.error || 'Unknown Error')
-        });
-
-        setIsSending(false);
-        handleSelect(targetId);
-    };
-
-    const handleDeleteRecent = async (id: string) => {
+    const handleDeleteRecent = useCallback(async (id: string) => {
         await RecentsService.delete(id);
         const updated = await RecentsService.getAll();
         setRecents(updated);
-    };
+    }, []);
 
-    const handleResendRecent = async (item: RecentSend) => {
+    const handleResendRecent = useCallback(async (item: RecentSend) => {
         if (isSending) return;
         setIsSending(true);
 
-        const payload: any = {
-            chatId: item.targetId.includes(':') ? item.targetId.split(':')[0] : item.targetId,
-            threadId: item.threadId,
-        };
+        try {
+            const payload: any = {
+                chatId: item.targetId.includes(':') ? item.targetId.split(':')[0] : item.targetId,
+                threadId: item.threadId,
+            };
 
-        if (item.type === 'link') {
-            payload.text = `${item.preview}\n${item.content}`;
-        } else if (item.type === 'image') {
-            payload.photo = item.content;
-        } else if (item.type === 'audio') {
-            payload.audio = item.content;
-        } else if (item.type === 'location') {
-            payload.text = item.content;
-        } else if (item.type === 'file') {
-            payload.document = item.content;
-        } else {
-            payload.text = item.content;
-        }
+            if (item.type === 'link') {
+                payload.text = `${item.preview}\n${item.content}`;
+            } else if (item.type === 'image') {
+                payload.photo = item.content;
+            } else if (item.type === 'audio') {
+                payload.audio = item.content;
+            } else if (item.type === 'location') {
+                payload.text = item.content;
+            } else if (item.type === 'file') {
+                payload.document = item.content;
+            } else {
+                payload.text = item.content;
+            }
 
-        const result = await TelegramService.sendPayloadSmart(profile.botToken, payload);
+            const result = await TelegramService.sendPayloadSmart(profile.botToken, payload);
 
-        setStatus({
-            message: result.success ? `Resent to ${item.targetName}` : `Resend Error: ${result.error}`,
-            type: result.success ? 'success' : 'error'
-        });
-
-        chrome.notifications.create({
-            type: 'basic',
-            iconUrl: 'icons/icon128.png',
-            title: result.success ? 'Resent Successfully' : 'Failed to Resend',
-            message: result.success ? `Resent to ${item.targetName}` : (result.error || 'Unknown Error')
-        });
-
-        if (result.success) {
-            await RecentsService.delete(item.id);
-            await RecentsService.add({
-                type: item.type,
-                content: item.content,
-                preview: item.preview,
-                targetName: item.targetName,
-                targetId: item.targetId,
-                threadId: item.threadId
+            setStatus({
+                message: result.success ? `Resent to ${item.targetName}` : `Resend Error: ${result.error}`,
+                type: result.success ? 'success' : 'error'
             });
-            const updated = await RecentsService.getAll();
-            setRecents(updated);
+
+            chrome.notifications.create({
+                type: 'basic',
+                iconUrl: 'icons/icon128.png',
+                title: result.success ? 'Resent Successfully' : 'Failed to Resend',
+                message: result.success ? `Resent to ${item.targetName}` : (result.error || 'Unknown Error')
+            });
+
+            if (result.success) {
+                await RecentsService.delete(item.id);
+                await RecentsService.add({
+                    type: item.type,
+                    content: item.content,
+                    preview: item.preview,
+                    targetName: item.targetName,
+                    targetId: item.targetId,
+                    threadId: item.threadId
+                });
+                const updated = await RecentsService.getAll();
+                setRecents(updated);
+
+                await LogService.add({
+                    type: 'success',
+                    message: `Resent to ${item.targetName}`,
+                    targetName: item.targetName
+                });
+            } else {
+                await ErrorService.handle(result.error || 'Resend failed', 'DashboardView.resend');
+            }
+        } catch (error) {
+            await ErrorService.handle(error, 'DashboardView.resend');
+        } finally {
+            setIsSending(false);
         }
+    }, [isSending, profile.botToken]);
 
-        setIsSending(false);
-    };
 
-    const handleManualRefresh = async () => {
+    const handleManualRefresh = useCallback(async () => {
         if (activeTab === 'channels') {
             onRefresh();
             setStatus({ message: 'Channels updated', type: 'success' });
@@ -247,9 +340,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             setLogs(data);
             setStatus({ message: 'Logs updated', type: 'success' });
         }
-    };
+    }, [activeTab, onRefresh]);
 
-    const confirmClear = async () => {
+    const confirmClear = useCallback(async () => {
         if (clearModal.type === 'recents') {
             await RecentsService.clear();
             setRecents([]);
@@ -260,9 +353,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             setStatus({ message: 'System logs cleared', type: 'success' });
         }
         setClearModal({ ...clearModal, open: false });
-    };
+    }, [clearModal]);
 
-    const handleAddDestination = async (chatId: string, title: string) => {
+    const handleAddDestination = useCallback(async (chatId: string, title: string) => {
         let finalGroupId = chatId;
         let threadId: number | undefined = undefined;
         let detectedType: TelegramTarget['type'] = 'private';
@@ -309,75 +402,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         }
 
         setIsAddModalOpen(false);
-    };
-
-    // === COMPUTED VALUES ===
-    const filteredTargets = targets
-        .filter(t =>
-            t.name.toLowerCase().includes(filter.toLowerCase()) ||
-            t.username?.toLowerCase().includes(filter.toLowerCase())
-        )
-        .sort((a, b) => {
-            if (a.pinned === b.pinned) return 0;
-            return a.pinned ? -1 : 1;
-        });
-
-    const personal = filteredTargets.filter(t => t.type === 'private');
-    const parents = filteredTargets.filter(t =>
-        (t.type === 'channel' || t.type === 'group') && !t.parentId
-    );
-
-    const childrenMap = new Map<string, TelegramTarget[]>();
-    filteredTargets
-        .filter(t => t.parentId)
-        .forEach(topic => {
-            const existing = childrenMap.get(topic.parentId!) || [];
-            existing.push(topic);
-            childrenMap.set(topic.parentId!, existing);
-        });
-
-    const orphanTopics = filteredTargets.filter(t =>
-        t.type === 'topic' &&
-        t.parentId &&
-        !parents.some(p => p.id === t.parentId)
-    );
-
-    // === RENDER HELPERS ===
-    const renderTargetSection = (
-        title: string,
-        list: TelegramTarget[],
-        includeChildren: boolean = false
-    ) => (
-        <div className="flex flex-col">
-            <div className="flex items-center gap-2 py-2">
-                <span className="text-[10px] font-bold text-muted uppercase tracking-widest">{title}</span>
-            </div>
-            <div className="h-px bg-white/10 mb-2" />
-            <div className="flex flex-col gap-1.5">
-                {list.map(target => (
-                    <TargetListItem
-                        key={target.id}
-                        target={target}
-                        children={includeChildren ? childrenMap.get(target.id) : undefined}
-                        isSelected={selectedId === target.id}
-                        isExpanded={expandedChannels[target.id] ?? true}
-                        editingId={editingId}
-                        editName={editName}
-                        onSelect={handleSelect}
-                        onToggleExpand={(id) => setExpandedChannels(prev => ({ ...prev, [id]: !prev[id] }))}
-                        onStartEdit={startEditing}
-                        onSaveEdit={saveEditing}
-                        onCancelEdit={() => setEditingId(null)}
-                        onEditNameChange={setEditName}
-                        onDelete={onDeleteTarget}
-                        onTogglePin={onTogglePin}
-                        onSendDirect={handleSendDirect}
-                        isSending={isSending}
-                    />
-                ))}
-            </div>
-        </div>
-    );
+    }, [profile.botToken, onAddTarget]);
 
     // === RENDER ===
     return (
@@ -483,9 +508,68 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         </div>
                     ) : (
                         <div className="flex flex-col gap-4 w-full">
-                            {personal.length > 0 && renderTargetSection('Personal', personal)}
-                            {parents.length > 0 && renderTargetSection('Channels & Groups', parents, true)}
-                            {orphanTopics.length > 0 && renderTargetSection('Other Topics', orphanTopics)}
+                            {/* Personal Chats */}
+                            <TargetSectionList
+                                title="Personal"
+                                list={personal}
+                                childrenMap={childrenMap}
+                                selectedId={selectedId}
+                                expandedChannels={expandedChannels}
+                                editingId={editingId}
+                                editName={editName}
+                                isSending={isSending}
+                                onSelect={handleSelect}
+                                onToggleExpand={handleToggleExpand}
+                                onStartEdit={startEditing}
+                                onSaveEdit={saveEditing}
+                                onCancelEdit={cancelEditing}
+                                onEditNameChange={setEditName}
+                                onDelete={onDeleteTarget}
+                                onTogglePin={onTogglePin}
+                                onSendDirect={handleSendDirect}
+                            />
+
+                            {/* Channels & Groups */}
+                            <TargetSectionList
+                                title="Channels & Groups"
+                                list={parents}
+                                childrenMap={childrenMap}
+                                selectedId={selectedId}
+                                expandedChannels={expandedChannels}
+                                editingId={editingId}
+                                editName={editName}
+                                isSending={isSending}
+                                onSelect={handleSelect}
+                                onToggleExpand={handleToggleExpand}
+                                onStartEdit={startEditing}
+                                onSaveEdit={saveEditing}
+                                onCancelEdit={cancelEditing}
+                                onEditNameChange={setEditName}
+                                onDelete={onDeleteTarget}
+                                onTogglePin={onTogglePin}
+                                onSendDirect={handleSendDirect}
+                            />
+
+                            {/* Orphan Topics (Topics without known parent channel) */}
+                            <TargetSectionList
+                                title="Other Topics"
+                                list={orphanTopics}
+                                childrenMap={childrenMap}
+                                selectedId={selectedId}
+                                expandedChannels={expandedChannels}
+                                editingId={editingId}
+                                editName={editName}
+                                isSending={isSending}
+                                onSelect={handleSelect}
+                                onToggleExpand={handleToggleExpand}
+                                onStartEdit={startEditing}
+                                onSaveEdit={saveEditing}
+                                onCancelEdit={cancelEditing}
+                                onEditNameChange={setEditName}
+                                onDelete={onDeleteTarget}
+                                onTogglePin={onTogglePin}
+                                onSendDirect={handleSendDirect}
+                            />
                         </div>
                     )}
                 </div>
