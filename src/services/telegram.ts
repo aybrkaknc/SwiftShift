@@ -2,7 +2,12 @@ export interface TelegramMessagePayload {
     chatId: string;
     text?: string;
     photo?: string | Blob; // URL or Blob
+    document?: string | Blob; // URL or Blob
+    animation?: string | Blob; // URL or Blob
+    audio?: string | Blob; // URL or Blob
     video?: string; // URL
+    latitude?: number;
+    longitude?: number;
     caption?: string;
     threadId?: number; // For Topics
 }
@@ -16,6 +21,22 @@ export type SendResult = { success: true; messageId: number } | { success: false
  */
 export const TelegramService = {
     baseUrl: 'https://api.telegram.org/bot',
+
+    /**
+     * Helper to get extension from Blob MIME type
+     */
+    getExtensionFromBlob(blob: Blob): string {
+        const type = blob.type;
+        if (type.includes('svg')) return 'svg';
+        if (type.includes('png')) return 'png';
+        if (type.includes('jpeg') || type.includes('jpg')) return 'jpg';
+        if (type.includes('gif')) return 'gif';
+        if (type.includes('webp')) return 'webp';
+        if (type.includes('mpeg') || type.includes('mp3')) return 'mp3';
+        if (type.includes('ogg')) return 'ogg';
+        if (type.includes('wav')) return 'wav';
+        return 'file';
+    },
 
     /**
      * Validate Bot Token
@@ -42,19 +63,46 @@ export const TelegramService = {
     },
 
     /**
-     * Send Message (Text/Link)
+     * Send Message (Text/Link) - Handles Chunking for long text (> 4096 chars)
      */
     async sendMessage(token: string, payload: TelegramMessagePayload): Promise<SendResult> {
-        const body: any = {
-            chat_id: payload.chatId,
-            text: payload.text,
-            parse_mode: 'HTML',
-            link_preview_options: JSON.stringify({ is_disabled: false }) // Enforce preview
-        };
+        if (!payload.text) return { success: false, error: 'Empty text' };
 
-        if (payload.threadId) body.message_thread_id = payload.threadId;
+        const MAX_LIMIT = 4096;
+        if (payload.text.length <= MAX_LIMIT) {
+            const body: any = {
+                chat_id: payload.chatId,
+                text: payload.text,
+                parse_mode: 'HTML',
+                link_preview_options: JSON.stringify({ is_disabled: false })
+            };
+            if (payload.threadId) body.message_thread_id = payload.threadId;
+            return this.makeRequest(token, 'sendMessage', body);
+        }
 
-        return this.makeRequest(token, 'sendMessage', body);
+        // Chunking logic
+        const chunks: string[] = [];
+        let str = payload.text;
+        while (str.length > 0) {
+            chunks.push(str.slice(0, MAX_LIMIT));
+            str = str.slice(MAX_LIMIT);
+        }
+
+        let lastResult: SendResult = { success: false, error: 'Unknown' };
+        for (let i = 0; i < chunks.length; i++) {
+            const body: any = {
+                chat_id: payload.chatId,
+                text: chunks[i],
+                parse_mode: 'HTML',
+                link_preview_options: JSON.stringify({ is_disabled: i === 0 ? false : true }) // Only first chunk shows preview
+            };
+            if (payload.threadId) body.message_thread_id = payload.threadId;
+
+            lastResult = await this.makeRequest(token, 'sendMessage', body);
+            if (!lastResult.success) break; // Error in one chunk, stop
+        }
+
+        return lastResult;
     },
 
     /**
@@ -66,10 +114,23 @@ export const TelegramService = {
         if (payload.caption) formData.append('caption', payload.caption);
         if (payload.threadId) formData.append('message_thread_id', payload.threadId.toString());
 
-        if (payload.photo instanceof Blob) {
-            formData.append('photo', payload.photo, 'image.jpg');
-        } else if (typeof payload.photo === 'string') {
-            formData.append('photo', payload.photo);
+        let photo = payload.photo;
+
+        // Auto-convert Data-URI to Blob
+        if (typeof photo === 'string' && photo.startsWith('data:')) {
+            try {
+                const response = await fetch(photo);
+                photo = await response.blob();
+            } catch (e) {
+                return { success: false, error: 'Data-URI işlenirken hata oluştu' };
+            }
+        }
+
+        if (photo instanceof Blob) {
+            const ext = this.getExtensionFromBlob(photo);
+            formData.append('photo', photo, `image.${ext}`);
+        } else if (typeof photo === 'string') {
+            formData.append('photo', photo);
         } else {
             return { success: false, error: 'Invalid photo format' };
         }
@@ -86,10 +147,155 @@ export const TelegramService = {
             if (res.status === 413 || (data.description && data.description.includes('too large'))) {
                 return { success: false, error: 'Entity Too Large', code: 413 };
             }
-            return { success: false, error: data.description || 'Unknown Error', code: data.error_code };
+            return { success: false, error: this.translateError(data.description || 'Unknown Error'), code: data.error_code };
         }
 
         return { success: true, messageId: data.result.message_id };
+    },
+
+    /**
+     * Send Document (Original Quality - No Compression)
+     */
+    async sendDocument(token: string, payload: TelegramMessagePayload): Promise<SendResult> {
+        const formData = new FormData();
+        formData.append('chat_id', payload.chatId);
+        if (payload.caption) formData.append('caption', payload.caption);
+        if (payload.threadId) formData.append('message_thread_id', payload.threadId.toString());
+
+        let document = payload.document;
+
+        // Auto-convert Data-URI to Blob
+        if (typeof document === 'string' && document.startsWith('data:')) {
+            try {
+                const response = await fetch(document);
+                document = await response.blob();
+            } catch (e) {
+                return { success: false, error: 'Data-URI işlenirken hata oluştu' };
+            }
+        }
+
+        if (document instanceof Blob) {
+            const ext = this.getExtensionFromBlob(document);
+            formData.append('document', document, `file.${ext}`);
+        } else if (typeof document === 'string') {
+            formData.append('document', document);
+        } else {
+            return { success: false, error: 'Invalid document format' };
+        }
+
+        const res = await fetch(`${this.baseUrl}${token}/sendDocument`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+            return { success: false, error: this.translateError(data.description || 'Unknown Error'), code: data.error_code };
+        }
+
+        return { success: true, messageId: data.result.message_id };
+    },
+
+    /**
+     * Send Animation (GIFs)
+     */
+    async sendAnimation(token: string, payload: TelegramMessagePayload): Promise<SendResult> {
+        const formData = new FormData();
+        formData.append('chat_id', payload.chatId);
+        if (payload.caption) formData.append('caption', payload.caption);
+        if (payload.threadId) formData.append('message_thread_id', payload.threadId.toString());
+
+        let animation = payload.animation || payload.photo;
+
+        if (typeof animation === 'string' && animation.startsWith('data:')) {
+            try {
+                const response = await fetch(animation);
+                animation = await response.blob();
+            } catch (e) {
+                return { success: false, error: 'Data-URI işlenirken hata oluştu' };
+            }
+        }
+
+        if (animation instanceof Blob) {
+            const ext = this.getExtensionFromBlob(animation);
+            formData.append('animation', animation, `animation.${ext}`);
+        } else if (typeof animation === 'string') {
+            formData.append('animation', animation);
+        } else {
+            return { success: false, error: 'Invalid animation format' };
+        }
+
+        const res = await fetch(`${this.baseUrl}${token}/sendAnimation`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+            return { success: false, error: this.translateError(data.description || 'Unknown Error'), code: data.error_code };
+        }
+
+        return { success: true, messageId: data.result.message_id };
+    },
+
+    /**
+     * Send Audio
+     */
+    async sendAudio(token: string, payload: TelegramMessagePayload): Promise<SendResult> {
+        const formData = new FormData();
+        formData.append('chat_id', payload.chatId);
+        if (payload.caption) formData.append('caption', payload.caption);
+        if (payload.threadId) formData.append('message_thread_id', payload.threadId.toString());
+
+        let audio = payload.audio;
+
+        if (typeof audio === 'string' && audio.startsWith('data:')) {
+            try {
+                const response = await fetch(audio);
+                audio = await response.blob();
+            } catch (e) {
+                return { success: false, error: 'Data-URI işlenirken hata oluştu' };
+            }
+        }
+
+        if (audio instanceof Blob) {
+            const ext = this.getExtensionFromBlob(audio);
+            formData.append('audio', audio, `audio.${ext}`);
+        } else if (typeof audio === 'string') {
+            formData.append('audio', audio);
+        } else {
+            return { success: false, error: 'Invalid audio format' };
+        }
+
+        const res = await fetch(`${this.baseUrl}${token}/sendAudio`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+            return { success: false, error: this.translateError(data.description || 'Unknown Error'), code: data.error_code };
+        }
+
+        return { success: true, messageId: data.result.message_id };
+    },
+
+    /**
+     * Send Location
+     */
+    async sendLocation(token: string, payload: TelegramMessagePayload): Promise<SendResult> {
+        if (payload.latitude === undefined || payload.longitude === undefined) {
+            return { success: false, error: 'Coordinates missing' };
+        }
+
+        const body: any = {
+            chat_id: payload.chatId,
+            latitude: payload.latitude,
+            longitude: payload.longitude
+        };
+        if (payload.threadId) body.message_thread_id = payload.threadId;
+
+        return this.makeRequest(token, 'sendLocation', body);
     },
 
     /**
@@ -104,7 +310,6 @@ export const TelegramService = {
             if (data.ok) return data.result;
             return [];
         } catch (e) {
-            console.error('Failed to fetch updates', e);
             return [];
         }
     },
@@ -123,7 +328,8 @@ export const TelegramService = {
             const data = await res.json();
 
             if (!res.ok || !data.ok) {
-                return { success: false, error: data.description || 'API Error', code: data.error_code };
+                const errorMessage = this.translateError(data.description || 'API Error');
+                return { success: false, error: errorMessage, code: data.error_code };
             }
 
             return { success: true, messageId: data.result.message_id };
@@ -133,12 +339,105 @@ export const TelegramService = {
     },
 
     /**
+     * Translate Cryptic Telegram Errors to Actionable Messages
+     */
+    translateError(desc: string): string {
+        const d = desc.toLowerCase();
+
+        if (d.includes('chat not found')) {
+            return 'Sohbet bulunamadı. ID yanlış olabilir veya Botu henüz gruba/kanala eklememiş olabilirsiniz.';
+        }
+        if (d.includes('bot is not a member')) {
+            return 'Bot bu grubun/kanalın üyesi değil. Lütfen önce Botu Telegram\'dan ekleyin.';
+        }
+        if (d.includes('bot was blocked')) {
+            return 'Bot kullanıcı tarafından engellenmiş. Bot mesaj gönderemez.';
+        }
+        if (d.includes('bot was kicked')) {
+            return 'Bot gruptan atılmış. Tekrar eklemeniz gerekiyor.';
+        }
+        if (d.includes('not enough rights')) {
+            return 'Botun mesaj gönderme yetkisi yok. Lütfen Botun yetkilerini kontrol edin.';
+        }
+        if (d.includes('not an administrator')) {
+            return 'Bot bu kanalda/grupta yönetici değil. Lütfen önce Botu yönetici olarak atayın.';
+        }
+        if (d.includes('forbidden') && d.includes('admin')) {
+            return 'Erişim Engellendi: Bot yönetici değil veya mesaj gönderme yetkisi kısıtlanmış.';
+        }
+        if (d.includes('thread_id_invalid') || d.includes('thread not found')) {
+            return 'Konu (Topic) bulunamadı. Silinmiş veya ID değişmiş olabilir.';
+        }
+        if (d.includes('initiate conversation')) {
+            return 'Bot kullanıcıyla sohbet başlatamaz. Lütfen önce Telegram\'dan bota /start komutunu verin.';
+        }
+        if (d.includes('migrated to a supergroup')) {
+            return 'Grup süpergruba dönüştü. Lütfen grubu silip tekrar ekleyin.';
+        }
+
+        return desc; // Fallback to original
+    },
+
+    /**
      * Smart Router for Payloads
      */
     async sendPayloadSmart(token: string, payload: TelegramMessagePayload): Promise<SendResult> {
+        // Detect coordinates in text/URL if not already provided
+        if (!payload.latitude && payload.text) {
+            const mapsMatch = payload.text.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+            if (mapsMatch) {
+                payload.latitude = parseFloat(mapsMatch[1]);
+                payload.longitude = parseFloat(mapsMatch[2]);
+            }
+        }
+
+        if (payload.latitude !== undefined && payload.longitude !== undefined) {
+            // First send the location object
+            const locResult = await this.sendLocation(token, payload);
+            // If it had text (like a name), send it as a follow-up if location succeeded
+            if (locResult.success && payload.text && !payload.text.startsWith('http')) {
+                await this.sendMessage(token, payload);
+            }
+            return locResult;
+        }
+
+        if (payload.document) {
+            return this.sendDocument(token, payload);
+        }
+        if (payload.audio) {
+            return this.sendAudio(token, payload);
+        }
         if (payload.photo) {
+            const photoUrl = typeof payload.photo === 'string' ? payload.photo.toLowerCase() : '';
+
+            const isSvg = photoUrl.endsWith('.svg') ||
+                photoUrl.includes('.svg?') ||
+                photoUrl.startsWith('data:image/svg+xml');
+
+            const isGif = photoUrl.endsWith('.gif') ||
+                photoUrl.includes('.gif?') ||
+                (payload.photo instanceof Blob && payload.photo.type === 'image/gif');
+
+            if (isSvg) {
+                // Route to sendDocument for SVGs
+                return this.sendDocument(token, {
+                    ...payload,
+                    document: payload.photo,
+                    photo: undefined
+                });
+            }
+
+            if (isGif) {
+                // Route to sendAnimation for GIFs
+                return this.sendAnimation(token, {
+                    ...payload,
+                    animation: payload.photo,
+                    photo: undefined
+                });
+            }
+
             return this.sendPhoto(token, payload);
         }
         return this.sendMessage(token, payload);
     }
-};
+}

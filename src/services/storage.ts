@@ -11,6 +11,7 @@ export interface TelegramTarget {
 export interface UserProfile {
     id: string;
     name: string; // e.g. "My Private Bot"
+    displayName?: string; // User's chosen display name
     username?: string; // Bot's @username
     botToken: string; // Stored securely
     chatId: string; // Default chat ID
@@ -34,6 +35,9 @@ export const StorageService = {
      * Initialize storage with default values if empty
      */
     async init(): Promise<void> {
+        // Attempt Migration FIRST if applicable
+        await this.migrateFromLegacy();
+
         const data = await chrome.storage.local.get(['profiles', 'activeProfileId', 'recentTargets']);
         if (!data.profiles) {
             await chrome.storage.local.set({
@@ -41,6 +45,35 @@ export const StorageService = {
                 activeProfileId: '',
                 recentTargets: [],
             });
+        }
+    },
+
+    /**
+     * Migrate from v3 (flat structure) to v4 (profile-based)
+     */
+    async migrateFromLegacy(): Promise<void> {
+        const legacy = await chrome.storage.local.get(['botToken', 'chatId', 'targets', 'displayName', 'profiles']);
+
+        // Check if legacy data exists and NO profiles exist yet
+        if (legacy.botToken && !legacy.profiles) {
+            const legacyProfile: UserProfile = {
+                id: legacy.chatId || 'legacy-default',
+                name: 'Migrated Bot',
+                displayName: legacy.displayName || 'Legacy User',
+                botToken: legacy.botToken,
+                chatId: legacy.chatId || '',
+                targets: legacy.targets || [],
+                lastSynced: Date.now()
+            };
+
+            await chrome.storage.local.set({
+                profiles: { [legacyProfile.id]: legacyProfile },
+                activeProfileId: legacyProfile.id,
+                recentTargets: legacy.targets ? legacy.targets.map((t: any) => t.id).slice(0, 3) : []
+            });
+
+            // Cleanup legacy keys
+            await chrome.storage.local.remove(['botToken', 'chatId', 'targets', 'displayName']);
         }
     },
 
@@ -123,5 +156,35 @@ export const StorageService = {
      */
     async clear(): Promise<void> {
         await chrome.storage.local.clear();
+    },
+
+    /**
+     * Get Recents view mode preference
+     */
+    async getViewMode(): Promise<'compact' | 'bento' | 'gallery'> {
+        const { viewMode } = await chrome.storage.local.get('viewMode');
+        return viewMode || 'bento'; // Default to bento
+    },
+
+    /**
+     * Set Recents view mode preference
+     */
+    async setViewMode(mode: 'compact' | 'bento' | 'gallery'): Promise<void> {
+        await chrome.storage.local.set({ viewMode: mode });
+    },
+
+    /**
+     * Tema tercihini al
+     */
+    async getTheme(): Promise<'light' | 'dark'> {
+        const { theme } = await chrome.storage.local.get('theme');
+        return theme || 'dark'; // Default to dark
+    },
+
+    /**
+     * Tema tercihini kaydet
+     */
+    async setTheme(theme: 'light' | 'dark'): Promise<void> {
+        await chrome.storage.local.set({ theme });
     }
 };

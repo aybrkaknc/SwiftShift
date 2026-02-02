@@ -28,3 +28,411 @@
     transform: translate(-50%, -50%) scale(2);
   }
 }
+
+@keyframes toast-slide-in {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-slide-out {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+.toast-animate-in {
+  animation: toast-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.toast-animate-out {
+  animation: toast-slide-out 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ===== LIGHT THEME - Complete Color System ===== */
+.light {
+  --color-background: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #F1F5F9;
+  --color-border: #CBD5E1;
+  /* Darker border for better definition */
+  --color-text: #0F172A;
+  /* Darker near-black for maximum contrast */
+  --color-text-secondary: #334155;
+  /* Darker secondary text */
+  --color-muted: #475569;
+  /* Much darker muted text for readability */
+  --color-primary: #B45309;
+  /* Darker amber for better visibility on white */
+  --color-primary-hover: #92400E;
+}
+
+/* === Background Colors === */
+.light .bg-background {
+  background-color: var(--color-background) !important;
+}
+
+.light .bg-background\/80,
+.light .bg-background\/95 {
+  background-color: rgba(248, 250, 252, 0.98) !important;
+  /* Higher opacity */
+}
+
+.light .bg-surface,
+.light .bg-surface\/20,
+.light .bg-surface\/30,
+.light .bg-surface\/50,
+.light .bg-surface\/80 {
+  background-color: var(--color-surface) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12) !important;
+  /* Slightly stronger shadow */
+}
+
+/* === Text Colors === */
+.light .text-white {
+  color: var(--color-text) !important;
+}
+
+.light .text-muted {
+  color: var(--color-muted) !important;
+}
+
+.light .text-muted\/60 {
+  color: var(--color-text-secondary) !important;
+  /* Increase visibility of faint text */
+}
+
+.light .text-gray-400 {
+  color: var(--color-text-secondary) !important;
+}
+
+.light .group-hover\:text-white:hover,
+.light .group:hover .group-hover\:text-white {
+  color: var(--color-text) !important;
+}
+
+/* === Border Colors === */
+.light .border-white\/5,
+.light .border-white\/10,
+.light .border-white\/20 {
+  border-color: var(--color-border) !important;
+}
+
+/* === Primary Colors === */
+.light .text-primary {
+  color: var(--color-primary) !important;
+}
+
+.light .bg-primary {
+  background-color: var(--color-primary) !important;
+}
+
+.light .bg-primary\/10 {
+  background-color: rgba(180, 83, 9, 0.15) !important;
+}
+
+.light .hover\:text-primary:hover {
+  color: var(--color-primary-hover) !important;
+}
+
+.light .hover\:bg-primary\/10:hover {
+  background-color: rgba(180, 83, 9, 0.2) !important;
+}
+
+.light .fill-primary {
+  fill: var(--color-primary) !important;
+}
+
+/* === Button & Interactive Hover States === */
+.light .hover\:bg-white\/10:hover {
+  background-color: var(--color-surface-hover) !important;
+  color: var(--color-text) !important;
+}
+
+.light .hover\:bg-white\/5:hover {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+.light .hover\:text-white:hover {
+  color: var(--color-text) !important;
+}
+
+/* === Input Fields === */
+.light input,
+.light textarea {
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text) !important;
+}
+
+.light input::placeholder,
+.light textarea::placeholder {
+  color: var(--color-text-secondary) !important;
+  /* Darker placeholders */
+}
+
+.light input:focus,
+.light textarea:focus {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(180, 83, 9, 0.2) !important;
+}
+
+/* === Success & Danger Colors === */
+.light .text-success {
+  color: #047857 !important;
+  /* Darker emerald */
+}
+
+.light .bg-success {
+  background-color: #047857 !important;
+}
+
+.light .text-danger {
+  color: #BE123C !important;
+  /* Darker rose/red */
+}
+
+.light .bg-danger {
+  background-color: #BE123C !important;
+}
+
+.light .hover\:text-danger:hover {
+  color: #9F1239 !important;
+}
+
+.light .hover\:bg-danger\/10:hover {
+  background-color: rgba(190, 18, 60, 0.15) !important;
+}
+
+/* === Recents View Content Fixes === */
+.light .text-gray-300 {
+  color: var(--color-text-secondary) !important;
+}
+
+.light .bg-black\/20 {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+.light h3.text-white,
+.light p.text-white {
+  color: var(--color-text) !important;
+}
+
+/* Modal/Focus Overlay Container */
+.light .bg-surface.border-white\/10 {
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+}
+
+/* === Search Bar === */
+.light .bg-surface\/50 {
+  background-color: #F1F5F9 !important;
+  /* Grayish background for button groups */
+  border: 1px solid #CBD5E1 !important;
+}
+
+.light .bg-surface\/50 input {
+  background-color: transparent !important;
+}
+
+/* === Tab Navigation === */
+.light .bg-primary\/20 {
+  background-color: rgba(180, 83, 9, 0.2) !important;
+}
+
+/* === Cards & List Items === */
+.light .bg-surface\/30 {
+  background-color: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+.light .bg-surface\/30:hover,
+.light .hover\:bg-surface\/30:hover {
+  background-color: #E2E8F0 !important;
+  /* Distinct gray for hover */
+  border-color: #94A3B8 !important;
+}
+
+.light .bg-white\/5 {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+.light .hover\:bg-white\/5:hover {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* === Selected/Active States === */
+.light .ring-primary\/30 {
+  --tw-ring-color: rgba(180, 83, 9, 0.4) !important;
+}
+
+.light .ring-primary\/50 {
+  --tw-ring-color: rgba(180, 83, 9, 0.6) !important;
+}
+
+.light .text-background {
+  color: #0F172A !important;
+  /* Force background-themed text to be dark in light mode */
+}
+
+/* === Specific Fixes for View Mode Buttons & Header === */
+.light .bg-background\/80 {
+  background-color: rgba(248, 250, 252, 0.9) !important;
+}
+
+.light .bg-primary.text-background {
+  color: #FFFFFF !important;
+  /* Active icon/text on amber button should be white for contrast */
+}
+
+/* === Glassmorphism Effects & Backdrop === */
+.light .backdrop-blur-sm,
+.light .backdrop-blur-md,
+.light .backdrop-blur-xl {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+.light .bg-white\/5,
+.light .bg-surface\/20 {
+  background-color: #F1F5F9 !important;
+  border: 1px solid #E2E8F0 !important;
+}
+
+.light .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  /* Even darker divider for light mode visibility */
+}
+
+/* === Custom Scrollbar (Global & Dark Theme) === */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(244, 171, 37, 0.3);
+  /* Subtle Primary Amber */
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(244, 171, 37, 0.6);
+  /* Vibrant Primary Amber */
+}
+
+/* === Light Theme Scrollbar Overrides === */
+.light ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: rgba(180, 83, 9, 0.2);
+  /* Darker Amber for light mode visibility */
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(180, 83, 9, 0.5);
+}
+
+/* === Modal Overlay === */
+.light .bg-black\/50 {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+/* === Toast/Notification Backgrounds === */
+.light .bg-success\/90 {
+  background-color: rgba(5, 150, 105, 0.95) !important;
+}
+
+.light .bg-danger\/90 {
+  background-color: rgba(220, 38, 38, 0.95) !important;
+}
+
+/* === Shadow Adjustments === */
+.light .shadow-xl,
+.light .shadow-lg {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+
+.light .shadow-glow {
+  box-shadow: 0 0 15px -3px rgba(217, 119, 6, 0.25) !important;
+}
+
+/* Theme Toggle Animation */
+@keyframes theme-rotate-in {
+  from {
+    transform: rotate(-90deg) scale(0);
+    opacity: 0;
+  }
+
+  to {
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes theme-rotate-out {
+  from {
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+  }
+
+  to {
+    transform: rotate(90deg) scale(0);
+    opacity: 0;
+  }
+}
+
+.theme-icon-enter {
+  animation: theme-rotate-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.theme-icon-exit {
+  animation: theme-rotate-out 0.3s ease-out forwards;
+}
+
+/* Stars animation for moon */
+@keyframes twinkle {
+
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.star-twinkle {
+  animation: twinkle 1.5s ease-in-out infinite;
+}
+
+.star-twinkle-delay-1 {
+  animation-delay: 0.3s;
+}
+
+.star-twinkle-delay-2 {
+  animation-delay: 0.7s;
+}

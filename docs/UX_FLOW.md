@@ -27,7 +27,11 @@
         - Submenu: "⚠️ Token Needed" (Click opens Settings).
     - **If Config OK:**
         - Root: "SwiftShift" (Icon).
-        - **Item 1-3:** Last Used Targets.
+        - **Dynamic Submenus:**
+            - **Text/Link:** Simple target list.
+            - **Image/Capture:** "Send Compressed (Photo)" vs "Send Uncompressed (File)" options.
+            - **Capture Only:** "Select Region..." interactive tool.
+        - **Item 1-3:** Last Used Targets (Smart Sorted).
         - **Submenu:** "More..." (Full Hierarchy).
 
 ## 3. Visual Language (UI System)
@@ -62,12 +66,23 @@
 
 ### Scenario C: Video with Timestamp
 1. User pauses YouTube video at `02:15`.
-2. Right Click Video -> SwiftShift -> Target.
-3. **Payload:**
-    - Text: "Video Source"
-    - Link: `https://youtube.com/watch?v=xyz&t=135s` (Auto-calculated).
+2. Right Click -> SwiftShift -> Target.
+3. **Payload:** Link with `&t=135s` (calculated).
+
+### Scenario D: Region Capture (New in v0.2.0)
+1. Right Click -> Capture Page -> Select Region.
+2. **UX:** Page dims, custom crosshair appears.
+3. **Interaction:** User drags to draw a dashed rectangle.
+4. **Action:** On release, rectangle is cropped and sent instantly.
+
+### Scenario E: Location Detection (New in v0.2.0)
+1. User right-clicks a Google Maps link or on the map.
+2. **Logic:** Content Script parses `@lat,lon` from URL.
+3. **Payload:** Sent as a native Telegram **Interactive Location**.
 
 ## 5. Keyboard Shortcut (`Alt+Q`)
 **Logic:** Smart Selection.
 1. **Trigger:** `Alt+Q`.
-2. **Target:** Sends to the **#1 Most Recently Used** target automatically.
+2. **Current Page:** Detects active URL/Title.
+3. **Selection:** If text is selected, sends text instead.
+4. **Target:** Sends to the **#1 Most Recently Used** target automatically.

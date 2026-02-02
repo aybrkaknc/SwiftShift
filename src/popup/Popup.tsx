@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { StorageService, UserProfile, TelegramTarget } from '../services/storage';
 import { DashboardView } from './views/DashboardView';
+import Welcome from '../welcome/Welcome';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import '../styles/globals.css';
 
 /**
@@ -46,13 +48,15 @@ function Popup() {
 
     const handleDeleteTarget = async (targetId: string) => {
         if (!profile) return;
-        const updatedTargets = targets.filter(t => t.id !== targetId);
+
+        // Bir kanal silindiğinde altındaki konuların da silinmesi için parentId kontrolü eklendi
+        const updatedTargets = targets.filter(t => t.id !== targetId && t.parentId !== targetId);
+
         await StorageService.updateProfileTargets(profile.id, updatedTargets);
         setTargets(updatedTargets);
         // Refresh context menu
         chrome.runtime.sendMessage({ type: 'REFRESH_MENU' });
     };
-
     const handleAddManualTarget = async (newTarget: TelegramTarget) => {
         if (!profile) return;
 
@@ -124,34 +128,27 @@ function Popup() {
     // View Routing
     if (!profile) {
         return (
-            <div className="w-[400px] h-[560px] bg-background flex items-center justify-center p-6 text-center">
-                <div>
-                    <p className="text-white font-bold mb-2">Setup Required</p>
-                    <p className="text-sm text-gray-400">Please finish setup in the welcome page.</p>
-                    <button
-                        onClick={() => chrome.tabs.create({ url: 'welcome.html' })}
-                        className="mt-4 px-4 py-2 bg-primary text-background rounded-lg font-bold text-sm"
-                    >
-                        Open Setup
-                    </button>
-                </div>
+            <div className="w-[400px] h-[560px] bg-background overflow-hidden">
+                <Welcome embedded onComplete={loadProfile} />
             </div>
         );
     }
 
     return (
-        <div className="w-[400px] h-[560px] bg-background">
-            <DashboardView
-                profile={profile}
-                targets={targets}
-                onRefresh={() => handleRefresh(profile)}
-                onLogout={handleLogout}
-                onDeleteTarget={handleDeleteTarget}
-                onAddTarget={handleAddManualTarget}
-                onRenameTarget={handleRenameTarget}
-                onTogglePin={handleTogglePin}
-            />
-        </div>
+        <ErrorBoundary>
+            <div className="w-[400px] h-[560px] bg-background">
+                <DashboardView
+                    profile={profile}
+                    targets={targets}
+                    onRefresh={() => handleRefresh(profile)}
+                    onLogout={handleLogout}
+                    onDeleteTarget={handleDeleteTarget}
+                    onAddTarget={handleAddManualTarget}
+                    onRenameTarget={handleRenameTarget}
+                    onTogglePin={handleTogglePin}
+                />
+            </div>
+        </ErrorBoundary>
     );
 }
 

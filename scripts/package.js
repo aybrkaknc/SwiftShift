@@ -7,6 +7,11 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// package.json'dan sürümü dinamik olarak oku
+const packageJsonPath = path.join(__dirname, '../package.json');
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+const version = packageJson.version;
+
 const DIST_DIR = path.join(__dirname, '../dist');
 const OUTPUT_DIR = path.join(__dirname, '../releases');
 
@@ -15,7 +20,9 @@ if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR);
 }
 
-const output = fs.createWriteStream(path.join(OUTPUT_DIR, 'swiftshift-v0.1.0.zip'));
+const outputFileName = `swiftshift-v${version}.zip`;
+const output = fs.createWriteStream(path.join(OUTPUT_DIR, outputFileName));
+console.log(`📦 SwiftShift v${version} paketleniyor...`);
 const archive = archiver('zip', {
     zlib: { level: 9 } // Sets the compression level.
 });

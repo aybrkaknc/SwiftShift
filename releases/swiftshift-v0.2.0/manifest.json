@@ -1,13 +1,15 @@
 {
   "name": "SwiftShift",
   "description": "Zero-friction content transfer to Telegram.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "manifest_version": 3,
   "permissions": [
     "contextMenus",
     "storage",
     "activeTab",
-    "commands"
+    "tabs",
+    "commands",
+    "notifications"
   ],
   "host_permissions": [
     "https://api.telegram.org/*"
@@ -32,7 +34,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/index.tsx-loader-64da1701.js"
+        "assets/index.tsx-d8c95935.js"
       ],
       "matches": [
         "<all_urls>"
@@ -54,8 +56,7 @@
         "<all_urls>"
       ],
       "resources": [
-        "assets/circle-check-9b79b332.js",
-        "assets/index.tsx-28983fb5.js"
+        "assets/index.tsx-d8c95935.js"
       ],
       "use_dynamic_url": false
     }

@@ -8,23 +8,19 @@ The extension follows the standard **Manifest V3** architecture with a heavy rel
 graph TD
     User((User)) -->|Right Click| CM[Context Menu]
     User -->|Alt+Q| CS[Content Script]
-    User -->|Click Icon| PU[Popup UI]
+    User -->|Region Select| RS[Region Overlay]
     
     CM -->|Menu Click| SW[Service Worker]
     CS -->|Message| SW
-    PU -->|Save Settings| LS[(Local Storage)]
+    RS -->|Region Selected| SW
     
-    SW -->|Read Settings| LS
+    SW -->|Read Settings| LS[(Local Storage)]
+    SW -->|Capture/Crop| OC[OffscreenCanvas]
     SW -->|Fetch Topics| TG[Telegram API]
     SW -->|Send Payload| TG
-    SW -->|Large File Logic| TG
     
-    TG -->|Error (Too Large)| SW
-    SW -->|Ask User| UI[In-Page Prompt]
-    UI -->|Confirmed| SW
-    SW -->|Send Link| TG
-    
-    CS -->|Show Toast| UI
+    TG -->|Success/Error| SW
+    SW -->|Push Logs| LOG[(Log Storage)]
 ```
 
 ## 🧩 Components
@@ -41,19 +37,22 @@ graph TD
 - **Role:** The Orchestrator.
 - **Responsibilities:**
     - **Cache Manager:** Store and retrieve Topic lists. Manage "Last Used" sorting.
-    - **Smart Fallback:** 
-        1. Try sending Media (Blob).
-        2. If API returns `413 Entity Too Large` -> Trigger User Prompt.
-        3. If User accepts -> Send Media Link instead.
-    - **Video Parser:** Detect YouTube/Vimeo URLs and append `&t=X` timestamp if available.
+    - **Media Router (SmartSend):** 
+        - Routes `.gif` to `sendAnimation`.
+        - Routes `.svg` to `sendDocument`.
+        - Detects Google Maps `@lat,lon` and routes to `sendLocation`.
+    - **Capture Engine:** 
+        - `captureVisibleTab` for full/visible screenshots.
+        - `OffscreenCanvas` for cropping user-selected regions.
+    - **Migration Engine:** Automatic v3 (flat) to v4 (profile-based) storage conversion.
     - **Context Menu Builder:** Dynamic rebuilding based on "Top 3 + More" logic.
 
-### 3. Content Script (Overlay.tsx)
+### 3. Content Script (Index.tsx)
 - **Role:** Interaction Layer.
 - **Responsibilities:**
     - **Alt+Q Listener.**
-    - **Toast UI:** Minimal error notifications.
-    - **Modern Alert UI:** For the "File Too Large - Send Link?" interactive prompt.
+    - **Region Capture UI:** Translucent overlay with crosshair for rectangle selection.
+    - **Metadata Extraction:** Extract coordinates from Maps URLs.
 
 ## 💾 Data Storage Schema (`chrome.storage.local`)
 

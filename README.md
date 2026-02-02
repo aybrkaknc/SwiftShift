@@ -13,6 +13,13 @@ SwiftShift is a premium Chrome extension designed to instantly bridge web conten
 - **Secure Storage:** All configurations and bot tokens are stored securely in your browser's local storage.
 - **One-Click Sharing:** Instantly send the current page link or selection to multiple Telegram destinations.
 
+### 🆕 v0.2.0 Features
+- **📷 Page Capture:** Capture the visible area of any webpage as PNG (Compressed or Uncompressed).
+- **✂️ Region Selection:** Select a specific area on the page with your mouse and capture only that region.
+- **📍 Location Sharing:** Google Maps coordinates are automatically detected and sent as interactive Telegram locations.
+- **🎞️ Enhanced Media:** Full support for GIFs (as animations), Audio files, WebP images, and SVG documents.
+- **🔒 Security Hardened:** Bot tokens no longer appear in console logs.
+
 ## 🛠️ Tech Stack
 
 - **Framework:** [React](https://reactjs.org/) with [Vite](https://vitejs.dev/)

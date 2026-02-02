@@ -1,12 +1,13 @@
 {
     "name": "SwiftShift",
     "description": "Zero-friction content transfer to Telegram.",
-    "version": "0.1.0",
+    "version": "0.3.0",
     "manifest_version": 3,
     "permissions": [
         "contextMenus",
         "storage",
         "activeTab",
+        "tabs",
         "commands",
         "notifications"
     ],
