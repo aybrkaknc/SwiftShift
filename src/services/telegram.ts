@@ -10,6 +10,7 @@ export interface TelegramMessagePayload {
     longitude?: number;
     caption?: string;
     threadId?: number; // For Topics
+    filename?: string; // Custom filename for file uploads
 }
 
 export type SendResult = { success: true; messageId: number } | { success: false; error: string; code?: number };
@@ -176,7 +177,8 @@ export const TelegramService = {
 
         if (document instanceof Blob) {
             const ext = this.getExtensionFromBlob(document);
-            formData.append('document', document, `file.${ext}`);
+            const fileName = payload.filename || `file.${ext}`;
+            formData.append('document', document, fileName);
         } else if (typeof document === 'string') {
             formData.append('document', document);
         } else {

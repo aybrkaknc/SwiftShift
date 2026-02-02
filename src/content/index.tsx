@@ -1,15 +1,12 @@
 import { SelectionHandler } from '../services/handlers/selectionHandler';
 import { MediaHandler } from '../services/handlers/mediaHandler';
-// Toast rendering removed. Using native notifications.
+import html2canvas from 'html2canvas';
 
-
-// Listen for Capture Command (Alt+Q) and Region Capture
+// Listen for Capture Command
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg.type === 'CAPTURE_CONTENT') {
-        processCapture().then((payload) => {
-            sendResponse(payload);
-        });
-        return true; // Async response
+        processCapture().then(payload => sendResponse(payload));
+        return true;
     }
 
     if (msg.type === 'START_REGION_CAPTURE') {
@@ -17,7 +14,36 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         sendResponse({ success: true });
         return true;
     }
+
+    if (msg.type === 'CAPTURE_FULL_PAGE_FOR_PDF') {
+        captureFullPage().then(data => sendResponse(data));
+        return true;
+    }
 });
+
+async function captureFullPage() {
+    try {
+        // html2canvas ile tüm body'yi yakala
+        const canvas = await html2canvas(document.body, {
+            useCORS: true, // Cross-origin görseller için
+            logging: false,
+            allowTaint: true,
+            scrollY: -window.scrollY // Sayfa başından itibaren al
+        } as any);
+
+        return {
+            success: true,
+            dataUrl: canvas.toDataURL('image/png'),
+            width: canvas.width,
+            height: canvas.height,
+            title: document.title,
+            url: window.location.href
+        };
+    } catch (error) {
+        console.error('PDF Capture Failed:', error);
+        return { success: false, error: String(error) };
+    }
+}
 
 async function processCapture() {
     // 1. Check for Selection
@@ -170,4 +196,62 @@ function startRegionCapture(targetId: string, threadId?: number, targetName?: st
     document.addEventListener('keydown', onKeyDown);
 
     document.body.appendChild(overlay);
+}
+
+// === SMART MEDIA DETECTION (Chrome-like) ===
+
+let lastContextMenuCoords = { x: 0, y: 0 };
+
+document.addEventListener('contextmenu', (e) => {
+    lastContextMenuCoords = { x: e.clientX, y: e.clientY };
+}, true);
+
+// Mesaj dinleyicisine ekleme (Dosyanın başındaki listener'ı güncellemek yerine buraya ayrı bir listener ekleyelim veya mevcut listener'ı editleyelim. 
+// replace_file_content olduğu için mevcut listener'ı güncellemek zor olabilir, yeni bir listener eklemek sorun olmaz, karmaşıklığı önler.)
+
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+    if (msg.type === 'GET_CLICKED_MEDIA') {
+        const media = findMediaAtCoords(lastContextMenuCoords.x, lastContextMenuCoords.y);
+        sendResponse(media || null);
+        return true;
+    }
+    return false; // Other messages handled by first listener
+});
+
+function findMediaAtCoords(x: number, y: number) {
+    const elements = document.elementsFromPoint(x, y);
+
+    for (const el of elements) {
+        // 1. IMG tag
+        if (el instanceof HTMLImageElement && el.src) {
+            return { src: el.src, type: 'image' };
+        }
+
+        // 2. VIDEO tag
+        if (el instanceof HTMLVideoElement) {
+            // Video src or poster
+            const src = el.currentSrc || el.src || el.poster;
+            if (src) return { src, type: 'video' };
+        }
+
+        // 3. Background Image
+        try {
+            const style = window.getComputedStyle(el);
+            const bg = style.backgroundImage;
+            if (bg && bg !== 'none' && bg.startsWith('url(')) {
+                // url("...") formatını temizle
+                // Regex: url\(['"]?(.*?)['"]?\)(.*?)
+                // Basitçe:
+                const match = bg.match(/url\(['"]?(.*?)['"]?\)/);
+                if (match && match[1]) {
+                    const url = match[1];
+                    // Twitter emojileri veya küçük ikonlar hariç tutulabilir ama şimdilik kalsın
+                    return { src: url, type: 'image' };
+                }
+            }
+        } catch (e) {
+            // Ignore computed style errors
+        }
+    }
+    return null;
 }

@@ -53,19 +53,14 @@ export async function buildPayload(
         return { text: info.selectionText };
     }
 
-    // --- FALLBACK CHECKS (Mevcut Mantık) ---
+    // --- FALLBACK CHECKS ---
 
     // 1. Metin Seçimi
     if (info.selectionText) {
         return { text: info.selectionText };
     }
 
-    // 2. Link
-    if (info.linkUrl) {
-        return { text: info.linkUrl };
-    }
-
-    // 3. Görsel (URL)
+    // 2. Görsel (URL) - Linkten ÖNCE kontrol edilmeli!
     if (info.mediaType === 'image' && info.srcUrl) {
         const isSvg = info.srcUrl.toLowerCase().endsWith('.svg') ||
             info.srcUrl.toLowerCase().includes('.svg?') ||
@@ -77,14 +72,19 @@ export async function buildPayload(
         return { photo: info.srcUrl, caption: tab?.url };
     }
 
-    // 4. Video (Link)
+    // 3. Audio
+    if (info.mediaType === 'audio' && info.srcUrl) {
+        return { audio: info.srcUrl, caption: tab?.url };
+    }
+
+    // 4. Video (Link) - Video genellikle srcUrl ile değil text link ile gönderilir ama mediaType check önemli
     if (info.mediaType === 'video' && info.srcUrl) {
         return { text: `Video: ${info.srcUrl}\nSource: ${tab?.url}` };
     }
 
-    // 4.5 Audio
-    if (info.mediaType === 'audio' && info.srcUrl) {
-        return { audio: info.srcUrl, caption: tab?.url };
+    // 5. Link (En son seçeneklerden biri)
+    if (info.linkUrl) {
+        return { text: info.linkUrl };
     }
 
     // 5. Sayfa (Varsayılan)
