@@ -165,8 +165,20 @@ chrome.commands.onCommand.addListener(async (command) => {
         const tabId = tab.id;
 
         try {
-            // 1. Capture Content
-            const payload = await chrome.tabs.sendMessage(tabId, { type: 'CAPTURE_CONTENT' });
+            // 1. Capture Content - Safety Wrapper
+            let payload;
+            try {
+                payload = await chrome.tabs.sendMessage(tabId, { type: 'CAPTURE_CONTENT' });
+            } catch (err) {
+                console.warn('SwiftShift: Content script connection failed.', err);
+                chrome.notifications.create({
+                    type: 'basic',
+                    iconUrl: 'icons/icon128.png',
+                    title: 'Connection Error',
+                    message: 'Please refresh the page to use SwiftShift properly.'
+                });
+                return;
+            }
 
             if (!payload || !payload.text) return;
 
@@ -178,7 +190,15 @@ chrome.commands.onCommand.addListener(async (command) => {
             const { recentTargets } = await chrome.storage.local.get('recentTargets');
             const targetId = recentTargets && recentTargets.length > 0 ? recentTargets[0] : profile.targets[0]?.id;
 
-            if (!targetId) return;
+            if (!targetId) {
+                chrome.notifications.create({
+                    type: 'basic',
+                    iconUrl: 'icons/icon128.png',
+                    title: 'No Target Found',
+                    message: 'Please select a default target in the extension popup.'
+                });
+                return;
+            }
 
             const target = profile.targets.find(t => t.id === targetId);
 
@@ -212,7 +232,8 @@ chrome.commands.onCommand.addListener(async (command) => {
             });
 
         } catch (e) {
-            // Silently fail to avoid console leaks in Alt+Q mode
+            console.error('Quick Send Error:', e);
+            // Silently fail or log to internal service
         }
     }
 });
