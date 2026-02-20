@@ -2,9 +2,11 @@
  * ErrorService
  * Merkezi hata yönetimi servisi.
  * Uygulama genelinde tutarlı hata işleme ve loglama sağlar.
+ * i18n: Hata mesajları için getTranslations() desteği eklenmiştir.
  */
 
 import { LogService } from './logService';
+import { getTranslations } from '../utils/i18nUtils';
 
 /**
  * Uygulama hatası için özel sınıf
@@ -137,26 +139,30 @@ export const ErrorService = {
      * Telegram API hata kodunu çevirir
      * @param code - Telegram hata kodu
      * @param description - Telegram hata açıklaması
-     * @returns Kullanıcı dostu hata mesajı
+     * @returns Kullanıcı dostu hata mesajı (Locale'e uygun)
      */
     translateTelegramError(code: number, description: string): string {
+        const t = getTranslations();
+
         switch (code) {
             case 400:
                 if (description.includes('chat not found')) {
-                    return 'Chat not found. The bot may not have access.';
+                    return t.telegramErrors.chatNotFound;
                 }
                 if (description.includes('message thread not found')) {
-                    return 'Topic not found. It may have been deleted.';
+                    return t.telegramErrors.topicNotFound;
                 }
-                return 'Bad request. Please check your input.';
+                return t.telegramErrors.badRequest;
             case 401:
-                return 'Invalid bot token. Please reconfigure.';
+                return t.telegramErrors.invalidToken;
             case 403:
-                return 'Bot was blocked or lacks permissions.';
+                return t.telegramErrors.blocked;
             case 429:
-                return 'Rate limited. Please wait and try again.';
+                return t.telegramErrors.rateLimit;
             default:
-                return description || 'An unknown error occurred.';
+                // Bilinmeyen hatalarda description'ı olduğu gibi göster (çeviri yoksa)
+                // veya generic hata mesajı + orjinal mesaj
+                return description || t.telegramErrors.unknown;
         }
     }
 };

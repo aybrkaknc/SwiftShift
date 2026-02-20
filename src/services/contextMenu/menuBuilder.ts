@@ -2,12 +2,14 @@
  * Menu Builder
  * Context menü oluşturma ve yapılandırma işlemlerini yönetir.
  * Option A: Tek Kök, Hızlı Erişim ve Sabitlenenler.
+ * i18n: getTranslations() ile çeviri desteği.
  */
 
 import { StorageService } from '../storage';
 import { LogService } from '../logService';
 import { onClicked } from './clickHandler';
 import { TelegramTarget } from '../storage';
+import { getTranslations } from '../../utils/i18nUtils';
 
 /**
  * Context Menu Manager
@@ -18,7 +20,8 @@ export const ContextMenuManager = {
      * Context Menu'yü başlatır
      */
     async init() {
-        await LogService.add({ type: 'info', message: 'Rebuilding context menus (v0.4.0)...' });
+        const t = getTranslations();
+        await LogService.add({ type: 'info', message: t.contextMenu.rebuilding });
 
         chrome.contextMenus.removeAll(async () => {
             const ROOT_ID = 'swiftshift-root';
@@ -40,12 +43,12 @@ export const ContextMenuManager = {
 
             // Hedefleri Gruplama
             const { targets } = profile;
-            const pinnedTargets = targets.filter(t => t.pinned);
+            const pinnedTargets = targets.filter(tgt => tgt.pinned);
 
             // Son Kullanılan Hedef
             const { recentTargets } = await chrome.storage.local.get('recentTargets') as { recentTargets: string[] };
             const lastTargetId = recentTargets && recentTargets.length > 0 ? recentTargets[0] : null;
-            const lastTarget = lastTargetId ? targets.find(t => t.id === lastTargetId) : null;
+            const lastTarget = lastTargetId ? targets.find(tgt => tgt.id === lastTargetId) : null;
 
             // === 2. QUICK SEND (En Üst) ===
             if (lastTarget) {
@@ -82,16 +85,16 @@ export const ContextMenuManager = {
                 chrome.contextMenus.create({
                     id: ALL_ID,
                     parentId: ROOT_ID,
-                    title: '📂 All Targets',
+                    title: t.contextMenu.allTargets,
                     contexts: ['all']
                 });
 
                 // Hiyerarşik Yapı (Klasik)
-                const parents = targets.filter(t => t.type !== 'topic');
-                const topics = targets.filter(t => t.type === 'topic');
+                const parents = targets.filter(tgt => tgt.type !== 'topic');
+                const topics = targets.filter(tgt => tgt.type === 'topic');
 
                 parents.forEach(parent => {
-                    const childTopics = topics.filter(t => t.parentId === parent.id);
+                    const childTopics = topics.filter(tgt => tgt.parentId === parent.id);
 
                     if (childTopics.length > 0) {
                         // Parent Folder
@@ -104,7 +107,7 @@ export const ContextMenuManager = {
                         });
 
                         // Direct Send to Parent
-                        this.createTargetMenuItem(PARENT_MENU_ID, parent, '📥'); // true = force submenu for details
+                        this.createTargetMenuItem(PARENT_MENU_ID, parent, '📥');
 
                         chrome.contextMenus.create({
                             id: `${PARENT_MENU_ID}-sep`,
@@ -124,7 +127,7 @@ export const ContextMenuManager = {
                 });
 
                 // Orphan Topics
-                const orphans = topics.filter(t => !parents.some(p => p.id === t.parentId));
+                const orphans = topics.filter(tgt => !parents.some(p => p.id === tgt.parentId));
                 if (orphans.length > 0) {
                     chrome.contextMenus.create({
                         id: `${ALL_ID}-sep-orphans`,
@@ -141,7 +144,7 @@ export const ContextMenuManager = {
                 chrome.contextMenus.create({
                     id: `${ROOT_ID}-no-targets`,
                     parentId: ROOT_ID,
-                    title: '⚠️ No targets found. Open extension to add one.',
+                    title: t.contextMenu.noTargets,
                     enabled: false,
                     contexts: ['all']
                 });
@@ -159,15 +162,17 @@ export const ContextMenuManager = {
             chrome.contextMenus.create({
                 id: `${ROOT_ID}-add-destination`,
                 parentId: ROOT_ID,
-                title: '➕ Add to SwiftShift',
+                title: t.contextMenu.addToSwiftShift,
                 contexts: ['all'],
                 documentUrlPatterns: ['https://web.telegram.org/*']
             });
 
             await LogService.add({
                 type: 'success',
-                message: `Context Menu v0.4.0 built.`,
-                details: `${pinnedTargets.length} pinned, ${targets.length} total.`
+                message: t.contextMenu.built,
+                details: t.contextMenu.builtDetails
+                    .replace('{pinned}', String(pinnedTargets.length))
+                    .replace('{total}', String(targets.length))
             });
         });
     },
@@ -176,11 +181,13 @@ export const ContextMenuManager = {
      * Hızlı Gönder Öğesi Oluşturur
      */
     createQuickSendItem(parentId: string, target: TelegramTarget) {
+        const t = getTranslations();
+
         // Selection
         chrome.contextMenus.create({
             id: `${parentId}-quick-text`,
             parentId: parentId,
-            title: `⚡ Send Text to ${target.name}`,
+            title: t.contextMenu.sendTextTo.replace('{name}', target.name),
             contexts: ['selection']
         });
 
@@ -188,7 +195,7 @@ export const ContextMenuManager = {
         chrome.contextMenus.create({
             id: `${parentId}-quick-link`,
             parentId: parentId,
-            title: `⚡ Send Link to ${target.name}`,
+            title: t.contextMenu.sendLinkTo.replace('{name}', target.name),
             contexts: ['link']
         });
 
@@ -196,7 +203,7 @@ export const ContextMenuManager = {
         chrome.contextMenus.create({
             id: `${parentId}-quick-image`,
             parentId: parentId,
-            title: `⚡ Send Image to ${target.name}`,
+            title: t.contextMenu.sendImageTo.replace('{name}', target.name),
             contexts: ['image']
         });
 
@@ -204,7 +211,7 @@ export const ContextMenuManager = {
         chrome.contextMenus.create({
             id: `${parentId}-quick-page`,
             parentId: parentId,
-            title: `⚡ Send Page to ${target.name}`,
+            title: t.contextMenu.sendPageTo.replace('{name}', target.name),
             contexts: ['page', 'video', 'audio']
         });
     },
@@ -214,6 +221,7 @@ export const ContextMenuManager = {
      * Otomatik olarak Compressed/Uncompressed alt menülerini ekler.
      */
     createTargetMenuItem(parentId: string, target: TelegramTarget, icon: string) {
+        const t = getTranslations();
         const itemId = `${parentId}-target-${target.id}`;
 
         chrome.contextMenus.create({
@@ -223,18 +231,11 @@ export const ContextMenuManager = {
             contexts: ['all']
         });
 
-        // Alt Menüler (Formats)
-
-        // 1. Auto / Compressed (Varsayılan davranış için üst öğeye tıklanabilir ama detay için alt menü şart)
-        // Not: Chrome Context Menu API'de bir öğe hem tıklanabilir hem de alt menüye sahip olamaz (parent ise tıklanamaz).
-        // Bu yüzden "Smart" bir yapı kuruyoruz: 
-        // Ana öğe -> Alt menüleri açar. Alt menülerde seçenekler sunar.
-
         // Smart Send (Default)
         chrome.contextMenus.create({
             id: `${itemId}-smart`,
             parentId: itemId,
-            title: `🚀 Smart Send (Auto)`,
+            title: t.contextMenu.smartSend,
             contexts: ['all']
         });
 
@@ -249,30 +250,22 @@ export const ContextMenuManager = {
         chrome.contextMenus.create({
             id: `${itemId}-photo`,
             parentId: itemId,
-            title: `🖼️ Send as Photo (Compressed)`,
+            title: t.contextMenu.sendAsPhoto,
             contexts: ['image']
         });
 
         chrome.contextMenus.create({
             id: `${itemId}-file`,
             parentId: itemId,
-            title: `📄 Send as File (Uncompressed)`,
+            title: t.contextMenu.sendAsFile,
             contexts: ['image', 'link', 'selection']
         });
 
-        // PDF Option
-        chrome.contextMenus.create({
-            id: `${itemId}-pdf`,
-            parentId: itemId,
-            title: `📑 Send as PDF`,
-            contexts: ['all'] // Her yerde göster
-        });
-
-        // Access to Page Capture inside Target
+        // Capture Page
         chrome.contextMenus.create({
             id: `${itemId}-capture`,
             parentId: itemId,
-            title: `📷 Capture Page & Send`,
+            title: t.contextMenu.captureAndSend,
             contexts: ['page', 'selection', 'link']
         });
     },
@@ -281,10 +274,11 @@ export const ContextMenuManager = {
      * Kurulum placeholder'ı
      */
     createSetupPlaceholder(rootId: string) {
+        const t = getTranslations();
         chrome.contextMenus.create({
             id: `${rootId}-setup-required`,
             parentId: rootId,
-            title: '⚠️ Setup Required (Click Extension Icon)',
+            title: t.contextMenu.setupRequired,
             enabled: false,
             contexts: ['all']
         });

@@ -42,7 +42,7 @@ export const TelegramService = {
     /**
      * Validate Bot Token
      */
-    async getMe(token: string): Promise<{ ok: boolean; result?: any }> {
+    async getMe(token: string): Promise<{ ok: boolean; result?: any; description?: string }> {
         try {
             const res = await fetch(`${this.baseUrl}${token}/getMe`);
             return await res.json();
@@ -54,7 +54,7 @@ export const TelegramService = {
     /**
      * Get Chat Info (Title, Type, etc.)
      */
-    async getChat(token: string, chatId: string): Promise<{ ok: boolean; result?: any }> {
+    async getChat(token: string, chatId: string): Promise<{ ok: boolean; result?: any; description?: string }> {
         try {
             const res = await fetch(`${this.baseUrl}${token}/getChat?chat_id=${chatId}`);
             return await res.json();
@@ -77,7 +77,7 @@ export const TelegramService = {
                 parse_mode: 'HTML',
                 link_preview_options: JSON.stringify({ is_disabled: false })
             };
-            if (payload.threadId) body.message_thread_id = payload.threadId;
+            if (payload.threadId && payload.threadId !== 1) body.message_thread_id = payload.threadId;
             return this.makeRequest(token, 'sendMessage', body);
         }
 
@@ -97,7 +97,7 @@ export const TelegramService = {
                 parse_mode: 'HTML',
                 link_preview_options: JSON.stringify({ is_disabled: i === 0 ? false : true }) // Only first chunk shows preview
             };
-            if (payload.threadId) body.message_thread_id = payload.threadId;
+            if (payload.threadId && payload.threadId !== 1) body.message_thread_id = payload.threadId;
 
             lastResult = await this.makeRequest(token, 'sendMessage', body);
             if (!lastResult.success) break; // Error in one chunk, stop
@@ -113,7 +113,7 @@ export const TelegramService = {
         const formData = new FormData();
         formData.append('chat_id', payload.chatId);
         if (payload.caption) formData.append('caption', payload.caption);
-        if (payload.threadId) formData.append('message_thread_id', payload.threadId.toString());
+        if (payload.threadId && payload.threadId !== 1) formData.append('message_thread_id', payload.threadId.toString());
 
         let photo = payload.photo;
 
@@ -161,7 +161,7 @@ export const TelegramService = {
         const formData = new FormData();
         formData.append('chat_id', payload.chatId);
         if (payload.caption) formData.append('caption', payload.caption);
-        if (payload.threadId) formData.append('message_thread_id', payload.threadId.toString());
+        if (payload.threadId && payload.threadId !== 1) formData.append('message_thread_id', payload.threadId.toString());
 
         let document = payload.document;
 
@@ -205,7 +205,7 @@ export const TelegramService = {
         const formData = new FormData();
         formData.append('chat_id', payload.chatId);
         if (payload.caption) formData.append('caption', payload.caption);
-        if (payload.threadId) formData.append('message_thread_id', payload.threadId.toString());
+        if (payload.threadId && payload.threadId !== 1) formData.append('message_thread_id', payload.threadId.toString());
 
         let animation = payload.animation || payload.photo;
 
@@ -247,7 +247,7 @@ export const TelegramService = {
         const formData = new FormData();
         formData.append('chat_id', payload.chatId);
         if (payload.caption) formData.append('caption', payload.caption);
-        if (payload.threadId) formData.append('message_thread_id', payload.threadId.toString());
+        if (payload.threadId && payload.threadId !== 1) formData.append('message_thread_id', payload.threadId.toString());
 
         let audio = payload.audio;
 
@@ -295,7 +295,7 @@ export const TelegramService = {
             latitude: payload.latitude,
             longitude: payload.longitude
         };
-        if (payload.threadId) body.message_thread_id = payload.threadId;
+        if (payload.threadId && payload.threadId !== 1) body.message_thread_id = payload.threadId;
 
         return this.makeRequest(token, 'sendLocation', body);
     },
@@ -337,6 +337,28 @@ export const TelegramService = {
             return { success: true, messageId: data.result.message_id };
         } catch (e) {
             return { success: false, error: 'Network Error' };
+        }
+    },
+
+    /**
+     * Detect User Chat ID from Updates
+     * Scans recent updates to find a message from a user (private chat)
+     */
+    async detectUserChatId(token: string): Promise<string | null> {
+        try {
+            const updates = await this.getUpdates(token);
+            // Find the first message from a private chat
+            const messageUpdate = updates.find((u: any) =>
+                u.message && u.message.chat && u.message.chat.type === 'private'
+            );
+
+            if (messageUpdate) {
+                return messageUpdate.message.chat.id.toString();
+            }
+            return null;
+        } catch (error) {
+            console.error('Error detecting chat ID:', error);
+            return null;
         }
     },
 

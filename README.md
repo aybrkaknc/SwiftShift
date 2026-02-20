@@ -6,19 +6,23 @@ SwiftShift is a premium Chrome extension designed to instantly bridge web conten
 
 ## ✨ Key Features
 
-- **Hierarchical Destinations:** Organizes topics under their parent channels/groups for a cleaner workflow.
-- **Glassmorphism UI:** A modern, high-end interface built with Tailwind CSS and Space Grotesk typography.
-- **Floating Action Bar:** Context-aware action buttons that appear on hover, keeping the UI clean.
-- **Auto-Discovery:** Automatically detects channel names when adding new topics.
-- **Secure Storage:** All configurations and bot tokens are stored securely in your browser's local storage.
-- **One-Click Sharing:** Instantly send the current page link or selection to multiple Telegram destinations.
+- **Hierarchical Destinations:** Organizes topics under their parent channels/groups with **Vertical Hierarchy Lines** for a clear tree-view flow.
+- **Glassmorphism UI:** A modern, high-end interface built with Tailwind CSS, featuring subtle glass effects and custom scrollbars.
+- **Integrated Action Bar (Integrated Edge):** Hover-triggered actions seamlessly embedded into the right edge of list items with theme-aware gradients.
+- **Auto-Discovery:** Automatically detects channel names and bot details when adding new topics.
+- **Secure Storage:** All configurations and bot tokens are stored securely in your browser's local storage via IndexedDB.
+- **One-Click Sharing:** Instantly send the current page link, selection, or page capture to multiple Telegram destinations.
+- **Clickable Recents:** Directly access links and images from your history by clicking items in the Recents tab.
 
-### 🆕 v0.2.0 Features
+### 🆕 v1.0.0 Features
+- **🎨 Design System 2.0:** New vertical accent lines, theme-aware action bars, and refined typography.
 - **📷 Page Capture:** Capture the visible area of any webpage as PNG (Compressed or Uncompressed).
 - **✂️ Region Selection:** Select a specific area on the page with your mouse and capture only that region.
 - **📍 Location Sharing:** Google Maps coordinates are automatically detected and sent as interactive Telegram locations.
-- **🎞️ Enhanced Media:** Full support for GIFs (as animations), Audio files, WebP images, and SVG documents.
-- **🔒 Security Hardened:** Bot tokens no longer appear in console logs.
+- **🎞️ Enhanced Media:** Full support for GIFs, Audio files, WebP images, and SVG documents.
+- **🚀 Turbo Refresh:** Added spinning animations and manual refresh for all list views.
+- **🔔 Pro Toast:** Bottom-aligned, animated notifications for better non-disturbing feedback.
+- **🔒 Security Hardened:** Bot tokens and sensitive data are strictly isolated.
 
 ## 🛠️ Tech Stack
 

@@ -2,6 +2,7 @@
  * Click Handler
  * Context menu tıklama olaylarını yönetir.
  * v0.4.1 Fix: Twitter Image Priority
+ * i18n: getTranslations() ile çeviri desteği.
  */
 
 import { StorageService } from '../storage';
@@ -12,7 +13,8 @@ import { LinkPreviewService } from '../linkPreview';
 import { buildPayload } from './payloadBuilder';
 import { handleAddDestination } from './destinationHandler';
 import { handleCaptureAndSend } from './captureHandler';
-import { PdfService } from '../pdfService';
+import { getTranslations } from '../../utils/i18nUtils';
+import { injectToast } from '../injectToast';
 
 /**
  * Context menu tıklama olayını işler
@@ -24,15 +26,7 @@ export async function onClicked(
 ): Promise<void> {
     const menuId = info.menuItemId.toString();
 
-    // === PDF HANDLER ===
-    if (menuId.endsWith('-pdf') && tab?.id) {
-        const targetMatch = menuId.match(/-target-(.+?)-pdf$/);
-        if (targetMatch) {
-            const targetId = targetMatch[1];
-            await handlePdfSend(targetId, tab, onMenuRebuild);
-        }
-        return;
-    }
+
 
     // === 1. ADD DESTINATION ===
     if (menuId.endsWith('-add-destination')) {
@@ -51,18 +45,16 @@ export async function onClicked(
     }
 
     // Determine Priority Type from Menu ID
-    // This fixes the issue where clicking "Send Image" on Twitter sent the tweet link instead.
     let priorityType: string | undefined;
 
     if (menuId.includes('-quick-image') || menuId.endsWith('-photo') || menuId.endsWith('-file')) {
-        // If user explicitly clicked an image-related action, prioritize image source
         priorityType = 'image';
     } else if (menuId.includes('-quick-link')) {
         priorityType = 'link';
     } else if (menuId.includes('-quick-text')) {
         priorityType = 'text';
     } else if (menuId.includes('-quick-page')) {
-        priorityType = 'page'; // Not explicitly used in payloadBuilder but clear intent
+        priorityType = 'page';
     }
 
     // === 3. QUICK SEND HANDLER ===
@@ -71,8 +63,6 @@ export async function onClicked(
         if (!recentTargets || recentTargets.length === 0) return;
 
         const targetId = recentTargets[0];
-
-        // Hızlı gönderim: sendMode 'auto' (undefined) ama priorityType ID'den gelir
         await processSend(targetId, info, tab, undefined, priorityType, onMenuRebuild);
         return;
     }
@@ -103,48 +93,34 @@ async function processSend(
     priorityType: string | undefined,
     onMenuRebuild: () => void
 ) {
-    // 1. Payload Oluştur
-    // isFile=true ise forceFile=true, priorityType (image/link/text) iletilir
+    const t = getTranslations();
     const forceFile = sendMode === 'file';
     let payload = await buildPayload(info, tab, priorityType, forceFile);
 
     // --- Content Script Fallback (Twitter Fix) ---
-    // Eğer payload yoksa VEYA öncelik 'image' olduğu halde görsel bulunamadıysa (sadece link bulunduysa)
-    // Content Script'ten derinlemesine analiz iste.
     const isImageRequestedButNotFound = priorityType === 'image' && (!payload || !payload.photo);
-    const isGenericCheck = !priorityType && (!payload || (!payload.photo && !payload.document)); // Smart mode, no media found
+    const isGenericCheck = !priorityType && (!payload || (!payload.photo && !payload.document));
 
     if (isImageRequestedButNotFound || isGenericCheck) {
         if (tab?.id) {
             try {
-                // Content Script'e sor: Orada ne var?
                 const media: any = await chrome.tabs.sendMessage(tab.id, { type: 'GET_CLICKED_MEDIA' });
 
                 if (media && media.src) {
-                    // Bulunan medyayı payload olarak kullan
                     if (!payload) payload = {};
-
-                    // Eğer link varsa onu caption olarak saklayabiliriz veya override ederiz
-                    // Amaç resim göndermek, caption: pageUrl daha iyi
                     payload.photo = media.src;
-
-                    // Eğer önceden text (link) bulmuşsak onu caption yapabiliriz ama tab.url daha güvenli caption
                     if (!payload.caption) payload.caption = tab.url;
 
-                    // Eğer 'file' modu ise
                     if (forceFile) {
                         payload.document = media.src;
                         delete payload.photo;
                     }
 
-                    // Text (Link) bilgisini temizle ki resim olarak gitsin
-                    // Amaç tweet linkini değil resmi göndermek
                     if (priorityType === 'image') {
                         delete payload.text;
                     }
                 }
             } catch (e) {
-                // Content script hatası veya yanıt yok (önemli değil, fallback devam eder)
                 console.warn('Media detection failed:', e);
             }
         }
@@ -156,16 +132,43 @@ async function processSend(
     const profile = await StorageService.getActiveProfile();
     if (!profile) return;
 
-    const target = profile.targets.find(t => t.id === targetId);
+    const target = profile.targets.find(tgt => tgt.id === targetId);
 
     // 3. Telegram Payload Hazırla
+    const isSelfSend = targetId === profile.id;
+    let finalChatId = isSelfSend ? profile.chatId : (targetId.includes(':') ? targetId.split(':')[0] : targetId);
+
+    // Self send validation & Auto-fix
+    if (isSelfSend && !finalChatId) {
+        // Try to detect it one last time
+        const detectedId = await TelegramService.detectUserChatId(profile.botToken);
+
+        if (detectedId) {
+            // Update local variable
+            finalChatId = detectedId;
+
+            // Update profile for future
+            const updatedProfile = { ...profile, chatId: detectedId };
+            await StorageService.saveProfile(updatedProfile);
+        } else {
+            if (tab?.id) {
+                await injectToast(tab.id, t.background.noTargetFound, 'Please send a message to your bot first!', 'error');
+            }
+            // Try to open the bot chat to help the user
+            if (profile.username) {
+                chrome.tabs.create({ url: `https://t.me/${profile.username}` });
+            }
+            return;
+        }
+    }
+
     const telegramPayload: any = {
-        chatId: targetId.includes(':') ? targetId.split(':')[0] : targetId,
-        threadId: target?.threadId,
+        chatId: finalChatId,
+        threadId: isSelfSend ? undefined : target?.threadId,
         ...payload
     };
 
-    // sendMode 'file' ve resim URL geldi -> document'a çevir (buildPayload zaten yapmış olabilir ama garantiye al)
+    // sendMode 'file' ve resim URL geldi -> document'a çevir
     if (sendMode === 'file' && telegramPayload.photo) {
         telegramPayload.document = telegramPayload.photo;
         delete telegramPayload.photo;
@@ -181,25 +184,26 @@ async function processSend(
     // 4. Gönder
     let result;
     if (sendMode === 'file' && payload.document) {
-        // Belge olarak gönder
         result = await TelegramService.sendDocument(profile.botToken, telegramPayload);
     } else {
-        // Smart send handles standard attributes
         result = await TelegramService.sendPayloadSmart(profile.botToken, telegramPayload);
     }
 
-    // 5. Sonuç Bildirimi
-    chrome.notifications.create({
-        type: 'basic',
-        iconUrl: 'icons/icon128.png',
-        title: result.success ? 'Sent Successfully' : 'Failed to Send',
-        message: result.success ? `Sent to ${target?.name || 'Telegram'}` : result.error
-    });
+    // 5. Sonuç Bildirimi (In-Page Toast)
+    if (tab?.id) {
+        if (result.success) {
+            await injectToast(tab.id, t.dashboard.sentSuccess, t.clickHandler.sentTo.replace('{name}', target?.name || 'Telegram'), 'success');
+        } else {
+            await injectToast(tab.id, t.dashboard.failedToSend, result.error, 'error');
+        }
+    }
 
     // 6. Logla
     await LogService.add({
         type: result.success ? 'success' : 'error',
-        message: result.success ? `Sent to ${target?.name || 'Unknown'}` : `Failed: ${result.error}`,
+        message: result.success
+            ? t.clickHandler.sentTo.replace('{name}', target?.name || 'Unknown')
+            : t.clickHandler.failedSend.replace('{error}', result.error),
         targetName: target?.name,
         details: `TargetID: ${targetId}, Mode: ${sendMode || 'auto'}`
     });
@@ -207,8 +211,6 @@ async function processSend(
     // 7. Recents'e Ekle
     if (result.success) {
         await addToRecents(telegramPayload, targetId, target?.name, target?.threadId);
-
-        // Update Recent Target & Rebuild Menu
         await StorageService.addRecentTarget(targetId);
         onMenuRebuild();
     }
@@ -248,10 +250,9 @@ async function addToRecents(payload: any, targetId: string, targetName: string =
         const mediaUrl = (payload.photo || payload.document) as string;
         content = mediaUrl;
 
-        // Eğer binary blob ise (Capture gibi)
         if (typeof content !== 'string') content = '[Binary Data]';
 
-        const isImg = !!payload.photo; // Photo alanındaysa kesindir
+        const isImg = !!payload.photo;
         if (isImg) {
             type = 'image';
         } else {
@@ -272,93 +273,4 @@ async function addToRecents(payload: any, targetId: string, targetName: string =
     });
 }
 
-/**
- * PDF Gönderme İşlemi
- */
-async function handlePdfSend(targetId: string, tab: chrome.tabs.Tab, onMenuRebuild: () => void) {
-    if (!tab.id) return;
-
-    // Bildirim: Başladı
-    chrome.notifications.create({
-        type: 'basic',
-        iconUrl: 'icons/icon128.png',
-        title: 'Generating PDF...',
-        message: 'Please wait, capturing page content.',
-        priority: 1
-    });
-
-    try {
-        // 1. Content Script'ten görüntüyü al
-        const captureResult: any = await chrome.tabs.sendMessage(tab.id, { type: 'CAPTURE_FULL_PAGE_FOR_PDF' });
-
-        if (!captureResult || !captureResult.success) {
-            throw new Error(captureResult?.error || 'Failed to capture page.');
-        }
-
-        // 2. PDF Blobu Oluştur (Background Service)
-        const pdfBlob = await PdfService.createPdfFromImage(
-            captureResult.dataUrl,
-            captureResult.width,
-            captureResult.height,
-            captureResult.url
-        );
-
-        // 3. Profili ve Hedefi Bul
-        const profile = await StorageService.getActiveProfile();
-        if (!profile) return;
-
-        const target = profile.targets.find(t => t.id === targetId);
-
-        // 4. Telegram'a Gönder
-        const filename = `${(captureResult.title || 'Page').replace(/[^a-z0-9]/gi, '_')}.pdf`;
-
-        // Blob olduğu için sendDocument özel logic gerektirebilir. 
-        // TelegramService.sendDocument "blob" desteklemeyebilir (sadece string url?).
-        // FormData kullanıyorsa Blob destekler. Kontrol etmek lazım ama genellikle destekler.
-        // TelegramService içindeki sendDocument fonksiyonu FormData kullanıyor mu?
-        // Eğer kullanmıyorsa Blob göndermek zor olabilir. 
-        // Ancak bizim TelegramService implementation'ımızda `formData.append('document', ...)` yapılıyorsa Blob çalışır.
-
-        // Geçici Payload
-        const telegramPayload: any = {
-            chatId: targetId.includes(':') ? targetId.split(':')[0] : targetId,
-            threadId: target?.threadId,
-            document: pdfBlob, // Blob object
-            caption: captureResult.url,
-            filename: filename // Custom filename with .pdf extension
-        };
-
-        const result = await TelegramService.sendDocument(profile.botToken, telegramPayload);
-
-        // 5. Sonuç Bildirimi
-        chrome.notifications.create({
-            type: 'basic',
-            iconUrl: 'icons/icon128.png',
-            title: result.success ? 'PDF Sent Successfully' : 'Failed to Send PDF',
-            message: result.success ? `Sent to ${target?.name || 'Telegram'}` : result.error
-        });
-
-        // 6. Log ve Recents
-        await LogService.add({
-            type: result.success ? 'success' : 'error',
-            message: result.success ? `Sent PDF to ${target?.name}` : `PDF Fail: ${result.error}`,
-            targetName: target?.name,
-            details: `TargetID: ${targetId}, PDF Generation`
-        });
-
-        if (result.success) {
-            await StorageService.addRecentTarget(targetId);
-            onMenuRebuild();
-        }
-
-    } catch (error) {
-        console.error(error);
-        chrome.notifications.create({
-            type: 'basic',
-            iconUrl: 'icons/icon128.png',
-            title: 'PDF Error',
-            message: String(error)
-        });
-    }
-}
 

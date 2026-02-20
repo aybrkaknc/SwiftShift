@@ -11,6 +11,7 @@ import { StorageService } from '../../services/storage';
 import { ViewModeToggle, ViewMode } from '../components/ViewModeToggle';
 import { RecentItemCard } from '../components/RecentItemCard';
 import { RecentItemDetail } from '../components/RecentItemDetail';
+import { useTranslation } from '../../utils/useTranslation';
 
 interface RecentsViewProps {
     recents: RecentSend[];
@@ -20,6 +21,7 @@ interface RecentsViewProps {
 }
 
 export const RecentsView: React.FC<RecentsViewProps> = ({ recents, onDelete, onResend, onClearAll }) => {
+    const { t } = useTranslation();
     const [viewMode, setViewMode] = useState<ViewMode>('bento');
     const [expandedItem, setExpandedItem] = useState<RecentSend | null>(null);
 
@@ -50,8 +52,8 @@ export const RecentsView: React.FC<RecentsViewProps> = ({ recents, onDelete, onR
                 <div className="text-center py-10 px-6 flex flex-col items-center gap-4 bg-surface/20 rounded-2xl border border-white/5 w-full">
                     <Clock size={20} className="text-muted" />
                     <div className="space-y-1">
-                        <p className="text-xs font-bold">No recent sends</p>
-                        <p className="text-[9px] text-muted leading-tight">Your recent sends will appear here.</p>
+                        <p className="text-xs font-bold">{t.recents.noRecents}</p>
+                        <p className="text-[9px] text-muted leading-tight">{t.recents.noRecentsHint}</p>
                     </div>
                 </div>
             </div>
@@ -64,12 +66,12 @@ export const RecentsView: React.FC<RecentsViewProps> = ({ recents, onDelete, onR
                 {/* Section Header - Sticky */}
                 <div className="flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-sm py-2 z-10">
                     <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-muted uppercase tracking-widest">History</span>
+                        <span className="text-[10px] font-bold text-muted uppercase tracking-widest">{t.recents.history}</span>
                         <button
                             onClick={onClearAll}
                             className="text-[9px] font-bold text-muted/50 hover:text-danger hover:bg-danger/5 px-2 py-0.5 rounded-full border border-white/5 transition-all"
                         >
-                            Clear All
+                            {t.recents.clearAll}
                         </button>
                     </div>
                     <ViewModeToggle mode={viewMode} onChange={handleModeChange} />

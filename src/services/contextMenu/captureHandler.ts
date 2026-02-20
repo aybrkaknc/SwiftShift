@@ -1,12 +1,15 @@
 /**
  * Capture Handler
  * Sayfa yakalama ve Telegram'a gönderme işlemlerini yönetir.
+ * i18n: getTranslations() ile çeviri desteği.
  */
 
 import { StorageService } from '../storage';
 import { TelegramService } from '../telegram';
 import { RecentsService } from '../recents';
 import { LogService } from '../logService';
+import { getTranslations } from '../../utils/i18nUtils';
+import { injectToast } from '../injectToast';
 
 /**
  * Sayfa görünür alanını yakalar ve Telegram'a gönderir
@@ -19,18 +22,16 @@ export async function handleCaptureAndSend(
     tab: chrome.tabs.Tab,
     captureMode: 'photo' | 'file' | 'region' = 'file'
 ): Promise<void> {
+    const t = getTranslations();
     const profile = await StorageService.getActiveProfile();
     if (!profile) {
-        chrome.notifications.create({
-            type: 'basic',
-            iconUrl: 'icons/icon128.png',
-            title: 'Error',
-            message: 'Bot bağlantısı bulunamadı.'
-        });
+        if (tab.id) {
+            await injectToast(tab.id, t.destination.error, t.capture.noBot, 'error');
+        }
         return;
     }
 
-    const target = profile.targets.find(t => t.id === targetId);
+    const target = profile.targets.find(tgt => tgt.id === targetId);
 
     // Region mode: Content script'e seçim UI'ını başlatması için mesaj gönder
     if (captureMode === 'region' && tab.id) {
@@ -42,12 +43,7 @@ export async function handleCaptureAndSend(
                 targetName: target?.name
             });
         } catch (e) {
-            chrome.notifications.create({
-                type: 'basic',
-                iconUrl: 'icons/icon128.png',
-                title: 'Region Capture Error',
-                message: 'Bu sayfada bölge seçimi yapılamıyor.'
-            });
+            await injectToast(tab.id, 'Region Capture Error', t.capture.regionUnavailable, 'error');
         }
         return;
     }
@@ -73,31 +69,36 @@ export async function handleCaptureAndSend(
         };
 
         if (captureMode === 'photo') {
-            // Compressed (Photo) - Telegram sıkıştırır
             result = await TelegramService.sendPhoto(profile.botToken, {
                 ...telegramPayload,
                 photo: new File([blob], fileName, { type: 'image/png' })
             });
         } else {
-            // Uncompressed (File) - Orijinal kalite
             result = await TelegramService.sendDocument(profile.botToken, {
                 ...telegramPayload,
                 document: new File([blob], fileName, { type: 'image/png' })
             });
         }
 
-        // Bildirim göster
-        chrome.notifications.create({
-            type: 'basic',
-            iconUrl: 'icons/icon128.png',
-            title: result.success ? 'Capture Sent!' : 'Capture Failed',
-            message: result.success ? `Sent to ${target?.name || 'Telegram'} (${captureMode === 'photo' ? 'Compressed' : 'Uncompressed'})` : result.error
-        });
+        // Bildirim göster (In-Page Toast)
+        if (tab.id) {
+            if (result.success) {
+                const successMsg = (captureMode === 'photo'
+                    ? t.capture.sentToCompressed
+                    : t.capture.sentToUncompressed
+                ).replace('{name}', target?.name || 'Telegram');
+                await injectToast(tab.id, t.capture.captureSent, successMsg, 'success');
+            } else {
+                await injectToast(tab.id, t.capture.captureFailed, result.error, 'error');
+            }
+        }
 
         // Log kaydet
         await LogService.add({
             type: result.success ? 'success' : 'error',
-            message: result.success ? `Page captured and sent to ${target?.name}` : `Capture failed: ${result.error}`,
+            message: result.success
+                ? t.background.regionCapturedSent.replace('{name}', target?.name || 'Unknown')
+                : t.clickHandler.failedSend.replace('{error}', result.error),
             targetName: target?.name,
             details: `URL: ${tab.url}, Mode: ${captureMode}`
         });
@@ -119,15 +120,12 @@ export async function handleCaptureAndSend(
         }
 
     } catch (e) {
-        chrome.notifications.create({
-            type: 'basic',
-            iconUrl: 'icons/icon128.png',
-            title: 'Capture Error',
-            message: 'Sayfa yakalanamadı. Chrome:// veya kısıtlı sayfalarda çalışmaz.'
-        });
+        if (tab.id) {
+            await injectToast(tab.id, t.capture.captureError, t.capture.captureErrorMsg, 'error');
+        }
         await LogService.add({
             type: 'error',
-            message: 'Page capture failed',
+            message: t.capture.captureFailedLog,
             details: String(e)
         });
     }

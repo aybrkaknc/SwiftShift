@@ -1,7 +1,7 @@
 {
     "name": "SwiftShift",
     "description": "Send content to Telegram instantly",
-    "version": "0.5.0",
+    "version": "1.0.0",
     "manifest_version": 3,
     "permissions": [
         "contextMenus",
@@ -9,7 +9,8 @@
         "activeTab",
         "tabs",
         "commands",
-        "notifications"
+        "notifications",
+        "scripting"
     ],
     "host_permissions": [
         "https://api.telegram.org/*"

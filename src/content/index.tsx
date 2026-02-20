@@ -1,6 +1,5 @@
 import { SelectionHandler } from '../services/handlers/selectionHandler';
 import { MediaHandler } from '../services/handlers/mediaHandler';
-import html2canvas from 'html2canvas';
 
 // Listen for Capture Command
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
@@ -14,36 +13,9 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         sendResponse({ success: true });
         return true;
     }
-
-    if (msg.type === 'CAPTURE_FULL_PAGE_FOR_PDF') {
-        captureFullPage().then(data => sendResponse(data));
-        return true;
-    }
 });
 
-async function captureFullPage() {
-    try {
-        // html2canvas ile tüm body'yi yakala
-        const canvas = await html2canvas(document.body, {
-            useCORS: true, // Cross-origin görseller için
-            logging: false,
-            allowTaint: true,
-            scrollY: -window.scrollY // Sayfa başından itibaren al
-        } as any);
 
-        return {
-            success: true,
-            dataUrl: canvas.toDataURL('image/png'),
-            width: canvas.width,
-            height: canvas.height,
-            title: document.title,
-            url: window.location.href
-        };
-    } catch (error) {
-        console.error('PDF Capture Failed:', error);
-        return { success: false, error: String(error) };
-    }
-}
 
 async function processCapture() {
     // 1. Check for Selection
@@ -198,7 +170,7 @@ function startRegionCapture(targetId: string, threadId?: number, targetName?: st
     document.body.appendChild(overlay);
 }
 
-// === SMART MEDIA DETECTION (Chrome-like) ===
+// === ENHANCED MEDIA SCANNER (v0.6.0) ===
 
 let lastContextMenuCoords = { x: 0, y: 0 };
 
@@ -206,52 +178,130 @@ document.addEventListener('contextmenu', (e) => {
     lastContextMenuCoords = { x: e.clientX, y: e.clientY };
 }, true);
 
-// Mesaj dinleyicisine ekleme (Dosyanın başındaki listener'ı güncellemek yerine buraya ayrı bir listener ekleyelim veya mevcut listener'ı editleyelim. 
-// replace_file_content olduğu için mevcut listener'ı güncellemek zor olabilir, yeni bir listener eklemek sorun olmaz, karmaşıklığı önler.)
-
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg.type === 'GET_CLICKED_MEDIA') {
-        const media = findMediaAtCoords(lastContextMenuCoords.x, lastContextMenuCoords.y);
+        const media = scanForMedia(lastContextMenuCoords.x, lastContextMenuCoords.y);
         sendResponse(media || null);
         return true;
     }
-    return false; // Other messages handled by first listener
+    return false;
 });
 
-function findMediaAtCoords(x: number, y: number) {
+/**
+ * Puanlama ve Filtreleme Sistemi ile Medya Taraması
+ */
+function scanForMedia(x: number, y: number) {
     const elements = document.elementsFromPoint(x, y);
+    const candidates: any[] = [];
 
     for (const el of elements) {
-        // 1. IMG tag
+        const rect = el.getBoundingClientRect();
+        const area = rect.width * rect.height;
+
+        // Görünmeyecek kadar küçükleri yoksay (ikonlar hariç, ikonlar bazen küçük olabilir ama img ise önemlidir)
+        if (rect.width < 10 || rect.height < 10) continue;
+
+        // 1. IMG
         if (el instanceof HTMLImageElement && el.src) {
-            return { src: el.src, type: 'image' };
+            candidates.push({
+                type: 'image',
+                src: el.currentSrc || el.src,
+                score: 10 + (area / 10000) // Büyük resimlere bonus
+            });
         }
 
-        // 2. VIDEO tag
+        // 2. VIDEO (Poster veya Frame Capture)
         if (el instanceof HTMLVideoElement) {
-            // Video src or poster
-            const src = el.currentSrc || el.src || el.poster;
-            if (src) return { src, type: 'video' };
+            // Eğer video oynuyorsa veya durmuşsa frame almayı dene
+            // Bu biraz maliyetli ama kullanıcı sağ tıkladıysa istiyordur.
+            try {
+                const frameUrl = captureVideoFrame(el);
+                if (frameUrl) {
+                    candidates.push({
+                        type: 'image', // Telegram'a fotoğraf olarak gönder
+                        src: frameUrl,
+                        score: 20 // Videolar yüksek öncelikli
+                    });
+                } else if (el.poster) {
+                    candidates.push({
+                        type: 'image',
+                        src: el.poster,
+                        score: 15
+                    });
+                }
+            } catch (e) {
+                // Video cross-origin ise frame alınamaz
+                if (el.poster) candidates.push({ type: 'image', src: el.poster, score: 5 });
+            }
         }
 
-        // 3. Background Image
+        // 3. CANVAS
+        if (el instanceof HTMLCanvasElement) {
+            try {
+                const dataUrl = el.toDataURL('image/png');
+                candidates.push({
+                    type: 'image',
+                    src: dataUrl,
+                    score: 12 + (area / 10000)
+                });
+            } catch (e) {
+                // Tainted canvas
+            }
+        }
+
+        // 4. SVG
+        if (el instanceof SVGElement) {
+            // SVG'yi base64'e çevir
+            try {
+                new XMLSerializer().serializeToString(el);
+                // SVG'yi direk işlemek yerine, burada basitçe varlığını kontrol ediyoruz.
+                // İdeal çözüm: SVG'yi canvas'a render etmek. Şimdilik bu kısmı atlıyoruz çünkü karmaşık.
+            } catch (e) { }
+        }
+
+        // 5. Background Image
         try {
             const style = window.getComputedStyle(el);
             const bg = style.backgroundImage;
             if (bg && bg !== 'none' && bg.startsWith('url(')) {
-                // url("...") formatını temizle
-                // Regex: url\(['"]?(.*?)['"]?\)(.*?)
-                // Basitçe:
                 const match = bg.match(/url\(['"]?(.*?)['"]?\)/);
                 if (match && match[1]) {
-                    const url = match[1];
-                    // Twitter emojileri veya küçük ikonlar hariç tutulabilir ama şimdilik kalsın
-                    return { src: url, type: 'image' };
+                    candidates.push({
+                        type: 'image',
+                        src: match[1],
+                        score: 5 + (area / 20000) // Backgroundlar genelde daha düşük öncelikli
+                    });
                 }
             }
-        } catch (e) {
-            // Ignore computed style errors
+        } catch (e) { }
+    }
+
+    // En yüksek puanlıyı seç
+    if (candidates.length > 0) {
+        // Puana göre sırala (Azalan)
+        candidates.sort((a, b) => b.score - a.score);
+        console.log('Media Candidates:', candidates); // Debug için
+        return candidates[0];
+    }
+
+    return null;
+}
+
+/**
+ * Videodan anlık kare yakalar
+ */
+function captureVideoFrame(video: HTMLVideoElement): string | null {
+    try {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/jpeg', 0.85);
         }
+    } catch (e) {
+        console.warn('Cannot capture video frame (CORS likely):', e);
     }
     return null;
 }

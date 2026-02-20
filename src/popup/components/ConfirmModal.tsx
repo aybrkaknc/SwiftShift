@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { Trash2, AlertTriangle } from 'lucide-react';
+import { useTranslation } from '../../utils/useTranslation';
 
 interface ConfirmModalProps {
     isOpen: boolean;
@@ -20,11 +21,13 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
     isOpen,
     title,
     message,
-    confirmText = 'Confirm',
+    confirmText,
     onConfirm,
     onCancel,
     variant = 'danger'
 }) => {
+    const { t } = useTranslation();
+
     if (!isOpen) return null;
 
     const Icon = variant === 'danger' ? Trash2 : AlertTriangle;
@@ -51,13 +54,13 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                         onClick={onCancel}
                         className="flex-1 py-2.5 text-xs font-bold text-muted hover:bg-white/5 rounded-full transition-all"
                     >
-                        Cancel
+                        {t.confirmModal.cancel}
                     </button>
                     <button
                         onClick={onConfirm}
                         className={`flex-1 py-2.5 bg-${colorClass} text-white text-xs font-bold rounded-full hover:bg-${colorClass}/80 transition-all shadow-lg shadow-${colorClass}/20`}
                     >
-                        {confirmText}
+                        {confirmText || t.confirmModal.clearAll}
                     </button>
                 </div>
             </div>

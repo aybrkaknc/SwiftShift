@@ -4,6 +4,7 @@
  * - O(N) orphan topic tespiti
  * - useMemo ve useCallback ile render optimizasyonu
  * - TargetSectionList bileşeni kullanımı
+ * - i18n desteği (useTranslation)
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -20,6 +21,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { TabBar, TabType } from '../components/TabBar';
 import { TargetSectionList } from '../components/TargetSectionList';
 import { ErrorService } from '../../services/errorService';
+import { useTranslation } from '../../utils/useTranslation';
 
 interface DashboardViewProps {
     profile: UserProfile;
@@ -42,11 +44,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     onRenameTarget,
     onTogglePin
 }) => {
+    const { t, locale, toggleLocale } = useTranslation();
+
     // === STATE ===
     const [selectedId, setSelectedId] = useState<string>('');
     const [isSending, setIsSending] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [filter, setFilter] = useState('');
     const [expandedChannels, setExpandedChannels] = useState<Record<string, boolean>>({});
+    const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+        personal: true,
+        channels: true,
+        orphans: true
+    });
 
     // Editing State
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -91,7 +101,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     useEffect(() => {
         chrome.storage.local.get('recentTargets', (data) => {
             const recent = data.recentTargets;
-            if (recent && recent.length > 0 && targets.find(t => t.id === recent[0])) {
+            if (recent && recent.length > 0 && targets.find(t2 => t2.id === recent[0])) {
                 setSelectedId(recent[0]);
             } else if (targets.length > 0) {
                 setSelectedId(targets[0].id);
@@ -101,54 +111,66 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
     // === MEMOIZED CALCULATIONS ===
 
-    const { filteredTargets, personal, parents, orphanTopics, childrenMap } = useMemo(() => {
-        // 1. Filter & Sort
+    // 1. Structural Memo (depends only on targets)
+    const { childrenMap, parentIds } = useMemo(() => {
+        const cMap = new Map<string, TelegramTarget[]>();
+        const pIds = new Set<string>();
+
+        targets.forEach(tItem => {
+            if (tItem.parentId) {
+                const existing = cMap.get(tItem.parentId) || [];
+                existing.push(tItem);
+                cMap.set(tItem.parentId, existing);
+            } else {
+                pIds.add(tItem.id);
+            }
+        });
+
+        return { childrenMap: cMap, parentIds: pIds };
+    }, [targets]);
+
+    // 2. Filter Memo (depends on filter, targets, and structure)
+    const { filteredTargets, personal, parents, orphanTopics } = useMemo(() => {
+        // Filter
         const filtered = targets
-            .filter(t =>
-                t.name.toLowerCase().includes(filter.toLowerCase()) ||
-                t.username?.toLowerCase().includes(filter.toLowerCase())
+            .filter(tItem =>
+                tItem.name.toLowerCase().includes(filter.toLowerCase()) ||
+                tItem.username?.toLowerCase().includes(filter.toLowerCase())
             )
             .sort((a, b) => {
                 if (a.pinned === b.pinned) return 0;
                 return a.pinned ? -1 : 1;
             });
 
-        // 2. Grouping
-        const personalList = filtered.filter(t => t.type === 'private');
-        const parentsList = filtered.filter(t =>
-            (t.type === 'channel' || t.type === 'group') && !t.parentId
+        // Grouping
+        const personalList = filtered.filter(tItem => tItem.type === 'private');
+        const parentsList = filtered.filter(tItem =>
+            (tItem.type === 'channel' || tItem.type === 'group') && !tItem.parentId
         );
 
-        // Map for children
-        const cMap = new Map<string, TelegramTarget[]>();
-        filtered
-            .filter(t => t.parentId)
-            .forEach(topic => {
-                const existing = cMap.get(topic.parentId!) || [];
-                existing.push(topic);
-                cMap.set(topic.parentId!, existing);
-            });
-
-        // 3. Orphan Topics Check - Optimized O(N) using Set
-        // Create a Set of parent IDs for O(1) lookup
-        const parentIds = new Set(targets.filter(t => !t.parentId).map(t => t.id));
-
-        const orphans = filtered.filter(t =>
-            t.type === 'topic' &&
-            t.parentId &&
-            !parentIds.has(t.parentId)
+        // Orphan Topics Check - Optimized O(N) using Set from structure memo
+        const orphans = filtered.filter(tItem =>
+            tItem.type === 'topic' &&
+            tItem.parentId &&
+            !parentIds.has(tItem.parentId)
         );
 
         return {
             filteredTargets: filtered,
             personal: personalList,
             parents: parentsList,
-            orphanTopics: orphans,
-            childrenMap: cMap
+            orphanTopics: orphans
         };
-    }, [targets, filter]); // Only re-calculate when targets or filter changes
+    }, [targets, filter, parentIds]);
 
     // === HANDLERS (CALLBACKS) ===
+
+    const handleToggleSection = useCallback((section: string) => {
+        setExpandedSections(prev => ({
+            ...prev,
+            [section]: !prev[section]
+        }));
+    }, []);
 
     const handleSelect = useCallback(async (id: string) => {
         if (editingId) return;
@@ -181,7 +203,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     const handleSendDirect = useCallback(async (targetId: string) => {
         if (isSending) return;
 
-        const target = targets.find(t => t.id === targetId);
+        const target = targets.find(tItem => tItem.id === targetId);
         if (!target) return;
 
         setIsSending(true);
@@ -202,16 +224,41 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 return;
             }
 
+            const isSelfSend = targetId === profile.id;
+            let finalChatId = isSelfSend ? profile.chatId : (targetId.includes(':') ? targetId.split(':')[0] : targetId);
+
+            // Self send validation & Auto-fix
+            if (isSelfSend && !finalChatId) {
+                // Try to detect it one last time
+                const detectedId = await TelegramService.detectUserChatId(profile.botToken);
+                if (detectedId) {
+                    finalChatId = detectedId;
+                    // Update profile for future
+                    const updatedProfile = { ...profile, chatId: detectedId };
+                    await StorageService.saveProfile(updatedProfile);
+                } else {
+                    setStatus({
+                        message: "Please send a message to your bot first!",
+                        type: 'error'
+                    });
+                    chrome.tabs.create({ url: `https://t.me/${profile.username}` });
+                    setIsSending(false);
+                    return;
+                }
+            }
+
             const payload = {
-                chatId: targetId.includes(':') ? targetId.split(':')[0] : targetId,
-                threadId: target.threadId,
+                chatId: finalChatId,
+                threadId: isSelfSend ? undefined : target.threadId,
                 text: `${tab.title}\n${tab.url}`
             };
 
             const result = await TelegramService.sendPayloadSmart(profile.botToken, payload);
 
             setStatus({
-                message: result.success ? `Sent to ${target.name}` : `Error: ${result.error}`,
+                message: result.success
+                    ? t.dashboard.sentTo.replace('{name}', target.name)
+                    : t.dashboard.sendError.replace('{error}', result.error || ''),
                 type: result.success ? 'success' : 'error'
             });
 
@@ -225,23 +272,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     threadId: target.threadId
                 });
 
-                // ErrorService ile success log
                 await LogService.add({
                     type: 'success',
-                    message: `Sent to ${target.name}`,
+                    message: t.dashboard.sentTo.replace('{name}', target.name),
                     targetName: target.name
                 });
             } else {
-                // Error log
                 await ErrorService.handle(result.error || 'Send failed', 'DashboardView.sendDirect');
             }
-
-            chrome.notifications.create({
-                type: 'basic',
-                iconUrl: 'icons/icon128.png',
-                title: result.success ? 'Sent Successfully' : 'Failed to Send',
-                message: result.success ? `Sent to ${target.name}` : (result.error || 'Unknown Error')
-            });
 
             if (result.success) {
                 handleSelect(targetId);
@@ -252,7 +290,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         } finally {
             setIsSending(false);
         }
-    }, [isSending, targets, profile.botToken, handleSelect]);
+    }, [isSending, targets, profile.botToken, handleSelect, t]);
 
     const handleDeleteRecent = useCallback(async (id: string) => {
         await RecentsService.delete(id);
@@ -265,9 +303,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         setIsSending(true);
 
         try {
+            const isSelfSend = item.targetId === profile.id;
+            let finalChatId = isSelfSend ? profile.chatId : (item.targetId.includes(':') ? item.targetId.split(':')[0] : item.targetId);
+
+            if (isSelfSend && !finalChatId) {
+                // Try to detect it one last time
+                const detectedId = await TelegramService.detectUserChatId(profile.botToken);
+                if (detectedId) {
+                    finalChatId = detectedId;
+                    // Update profile for future
+                    const updatedProfile = { ...profile, chatId: detectedId };
+                    await StorageService.saveProfile(updatedProfile);
+                } else {
+                    setStatus({
+                        message: "Please send a message to your bot first!",
+                        type: 'error'
+                    });
+                    chrome.tabs.create({ url: `https://t.me/${profile.username}` });
+                    setIsSending(false);
+                    return;
+                }
+            }
+
             const payload: any = {
-                chatId: item.targetId.includes(':') ? item.targetId.split(':')[0] : item.targetId,
-                threadId: item.threadId,
+                chatId: finalChatId,
+                threadId: isSelfSend ? undefined : item.threadId,
             };
 
             if (item.type === 'link') {
@@ -287,15 +347,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             const result = await TelegramService.sendPayloadSmart(profile.botToken, payload);
 
             setStatus({
-                message: result.success ? `Resent to ${item.targetName}` : `Resend Error: ${result.error}`,
+                message: result.success
+                    ? t.dashboard.resentTo.replace('{name}', item.targetName)
+                    : t.dashboard.resendError.replace('{error}', result.error || ''),
                 type: result.success ? 'success' : 'error'
-            });
-
-            chrome.notifications.create({
-                type: 'basic',
-                iconUrl: 'icons/icon128.png',
-                title: result.success ? 'Resent Successfully' : 'Failed to Resend',
-                message: result.success ? `Resent to ${item.targetName}` : (result.error || 'Unknown Error')
             });
 
             if (result.success) {
@@ -313,7 +368,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                 await LogService.add({
                     type: 'success',
-                    message: `Resent to ${item.targetName}`,
+                    message: t.dashboard.resentTo.replace('{name}', item.targetName),
                     targetName: item.targetName
                 });
             } else {
@@ -324,36 +379,46 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         } finally {
             setIsSending(false);
         }
-    }, [isSending, profile.botToken]);
+    }, [isSending, profile.botToken, t]);
 
 
     const handleManualRefresh = useCallback(async () => {
-        if (activeTab === 'channels') {
-            onRefresh();
-            setStatus({ message: 'Channels updated', type: 'success' });
-        } else if (activeTab === 'recents') {
-            const data = await RecentsService.getAll();
-            setRecents(data);
-            setStatus({ message: 'Recents updated', type: 'success' });
-        } else if (activeTab === 'logs') {
-            const data = await LogService.getAll();
-            setLogs(data);
-            setStatus({ message: 'Logs updated', type: 'success' });
+        setIsRefreshing(true);
+
+        // At least 600ms of spinning for visual feedback
+        const minSpin = new Promise(resolve => setTimeout(resolve, 600));
+
+        try {
+            if (activeTab === 'channels') {
+                onRefresh();
+                setStatus({ message: t.dashboard.channelsUpdated, type: 'success' });
+            } else if (activeTab === 'recents') {
+                const data = await RecentsService.getAll();
+                setRecents(data);
+                setStatus({ message: t.dashboard.recentsUpdated, type: 'success' });
+            } else if (activeTab === 'logs') {
+                const data = await LogService.getAll();
+                setLogs(data);
+                setStatus({ message: t.dashboard.logsUpdated, type: 'success' });
+            }
+            await minSpin;
+        } finally {
+            setIsRefreshing(false);
         }
-    }, [activeTab, onRefresh]);
+    }, [activeTab, onRefresh, t]);
 
     const confirmClear = useCallback(async () => {
         if (clearModal.type === 'recents') {
             await RecentsService.clear();
             setRecents([]);
-            setStatus({ message: 'Recents history cleared', type: 'success' });
+            setStatus({ message: t.recents.recentsCleared, type: 'success' });
         } else {
             await LogService.clear();
             setLogs([]);
-            setStatus({ message: 'System logs cleared', type: 'success' });
+            setStatus({ message: t.logs.logsCleared, type: 'success' });
         }
         setClearModal({ ...clearModal, open: false });
-    }, [clearModal]);
+    }, [clearModal, t]);
 
     const handleAddDestination = useCallback(async (chatId: string, title: string) => {
         let finalGroupId = chatId;
@@ -382,7 +447,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         const chatCheck = await TelegramService.getChat(profile.botToken, finalGroupId) as any;
         if (!chatCheck.ok) {
             setStatus({
-                message: `Bot warning: ${chatCheck.description || 'No access to this chat.'}`,
+                message: t.dashboard.botWarning.replace('{error}', chatCheck.description || 'No access to this chat.'),
                 type: 'error'
             });
         }
@@ -402,7 +467,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         }
 
         setIsAddModalOpen(false);
-    }, [profile.botToken, onAddTarget]);
+    }, [profile.botToken, onAddTarget, t]);
 
     // === RENDER ===
     return (
@@ -411,12 +476,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {/* Header */}
             <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 border-b border-white/5 bg-background/95 backdrop-blur-sm">
                 <div className="flex items-center gap-2.5">
-                    <img src="icons/icon128.png" className="w-5 h-5 object-contain" alt="SwiftShift Logo" />
+                    <img src="icons/icon128.png" className="w-7 h-7 object-contain" alt="SwiftShift Logo" />
                     <div className="flex flex-col">
                         <h1 className="text-base font-bold tracking-tight leading-tight">SwiftShift</h1>
-                        {profile.displayName && (
-                            <span className="text-[10px] text-muted font-medium -mt-0.5">Hello, {profile.displayName}</span>
-                        )}
                     </div>
                 </div>
 
@@ -426,7 +488,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         <button
                             onClick={() => setIsAddModalOpen(true)}
                             className="flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-white hover:bg-white/10 transition-all"
-                            title="Add Chat"
+                            title={t.dashboard.addChat}
                         >
                             <Plus size={18} />
                         </button>
@@ -434,14 +496,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <button
                         onClick={handleManualRefresh}
                         className="flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-primary hover:bg-primary/10 transition-all"
-                        title="Reload List"
+                        title={t.dashboard.reloadList}
                     >
-                        <RefreshCw size={18} className={isSending ? 'animate-spin' : ''} />
+                        <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
+                    </button>
+                    <button
+                        onClick={toggleLocale}
+                        className="flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-white hover:bg-white/10 transition-all text-[10px] font-black tracking-wide"
+                        title={locale === 'en' ? 'Switch to Turkish' : 'İngilizceye Geç'}
+                    >
+                        {locale.toUpperCase()}
                     </button>
                     <button
                         onClick={onLogout}
                         className="flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-danger hover:bg-danger/10 transition-all"
-                        title="Logout"
+                        title={t.dashboard.logout}
                     >
                         <LogOut size={18} className="-translate-x-[1px]" />
                     </button>
@@ -451,31 +520,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {/* Status Toast */}
             {status && (
                 <div className={`
-                    absolute top-[52px] left-0 right-0 z-50 px-4 py-2 
-                    ${isToastExiting ? 'toast-animate-out' : 'toast-animate-in'}
-                    ${status.type === 'success' ? 'bg-primary/20 text-primary border-b border-primary/20' : 'bg-danger/20 text-danger border-b border-danger/20'}
+                    absolute bottom-0 left-0 right-0 z-50 px-4 py-2 
+                    ${isToastExiting ? 'toast-animate-out-bottom' : 'toast-animate-in-bottom'}
+                    ${status.type === 'success' ? 'bg-primary/20 text-primary border-t border-primary/20' : 'bg-danger/20 text-danger border-t border-danger/20'}
                     backdrop-blur-md text-[11px] font-bold text-center shadow-lg
                 `}>
                     {status.message}
                 </div>
             )}
 
-            {/* Bot Info & Search */}
-            <div className="pt-3 pb-1 px-4 flex items-center justify-center gap-2">
-                <div className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
-                </div>
-                <div
-                    onClick={() => {
-                        const botUser = profile.username || profile.name.replace(/\s+/g, '');
-                        window.open(`https://t.me/${botUser}`, '_blank');
-                    }}
-                    className="text-muted text-[10px] font-bold tracking-widest uppercase cursor-pointer group"
-                >
-                    Bot: <span className="text-white group-hover:text-primary transition-colors">@{profile.username || profile.name}</span>
-                </div>
-            </div>
+
 
             <div className="px-4 py-3">
                 <div className="relative group">
@@ -483,12 +537,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         <Search size={16} className="text-muted group-focus-within:text-primary transition-colors" />
                     </div>
                     <input
-                        className="block w-full pl-10 pr-3 py-2 border border-white/5 rounded-xl bg-surface/40 text-sm text-white placeholder-muted/50 focus:ring-1 focus:ring-primary focus:border-primary/40 focus:bg-surface/60 transition-all outline-none"
-                        placeholder="Quick search..."
+                        className="block w-full pl-10 pr-36 py-2 border border-white/5 rounded-xl bg-surface/40 text-sm text-white placeholder-muted/50 focus:ring-1 focus:ring-primary focus:border-primary/40 focus:bg-surface/60 transition-all outline-none"
+                        placeholder={t.dashboard.searchPlaceholder}
                         type="text"
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
                     />
+                    {/* Integrated Bot Badge */}
+                    <div
+                        onClick={() => {
+                            const botUser = profile.username || profile.name.replace(/\s+/g, '');
+                            window.open(`https://t.me/${botUser}`, '_blank');
+                        }}
+                        className="absolute inset-y-0 right-2 flex items-center cursor-pointer group/bot"
+                        title="View Bot on Telegram"
+                    >
+                        <div className="flex items-center gap-2 px-3 py-0.5 rounded-lg bg-white/[0.03] border border-white/5 group-hover/bot:bg-primary/10 group-hover/bot:border-primary/20 transition-all">
+                            <div className="w-1 h-1 rounded-full bg-primary/40 group-hover/bot:bg-primary transition-colors"></div>
+                            <span className="text-[9px] font-bold text-muted/40 group-hover/bot:text-primary transition-colors uppercase tracking-wider">
+                                @{profile.username || profile.name}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -502,15 +572,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         <div className="text-center py-10 px-6 flex flex-col items-center gap-4 bg-surface/20 rounded-2xl border border-white/5 w-full">
                             <Users size={20} className="text-muted" />
                             <div className="space-y-1">
-                                <p className="text-xs font-bold">No destinations added</p>
-                                <p className="text-[9px] text-muted leading-tight">Click + to add a chat manually.</p>
+                                <p className="text-xs font-bold">{t.dashboard.noDestinations}</p>
+                                <p className="text-[9px] text-muted leading-tight">{t.dashboard.noDestinationsHint}</p>
                             </div>
                         </div>
                     ) : (
                         <div className="flex flex-col gap-4 w-full">
                             {/* Personal Chats */}
                             <TargetSectionList
-                                title="Personal"
+                                title={t.dashboard.sectionPersonal}
                                 list={personal}
                                 childrenMap={childrenMap}
                                 selectedId={selectedId}
@@ -518,6 +588,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                                 editingId={editingId}
                                 editName={editName}
                                 isSending={isSending}
+                                isSectionExpanded={expandedSections.personal}
+                                onToggleSection={() => handleToggleSection('personal')}
                                 onSelect={handleSelect}
                                 onToggleExpand={handleToggleExpand}
                                 onStartEdit={startEditing}
@@ -531,7 +603,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                             {/* Channels & Groups */}
                             <TargetSectionList
-                                title="Channels & Groups"
+                                title={t.dashboard.sectionChannels}
                                 list={parents}
                                 childrenMap={childrenMap}
                                 selectedId={selectedId}
@@ -539,6 +611,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                                 editingId={editingId}
                                 editName={editName}
                                 isSending={isSending}
+                                isSectionExpanded={expandedSections.channels}
+                                onToggleSection={() => handleToggleSection('channels')}
                                 onSelect={handleSelect}
                                 onToggleExpand={handleToggleExpand}
                                 onStartEdit={startEditing}
@@ -552,7 +626,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                             {/* Orphan Topics (Topics without known parent channel) */}
                             <TargetSectionList
-                                title="Other Topics"
+                                title={t.dashboard.sectionOrphans}
                                 list={orphanTopics}
                                 childrenMap={childrenMap}
                                 selectedId={selectedId}
@@ -560,6 +634,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                                 editingId={editingId}
                                 editName={editName}
                                 isSending={isSending}
+                                isSectionExpanded={expandedSections.orphans}
+                                onToggleSection={() => handleToggleSection('orphans')}
                                 onSelect={handleSelect}
                                 onToggleExpand={handleToggleExpand}
                                 onStartEdit={startEditing}
@@ -594,12 +670,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 onAdd={handleAddDestination}
             />
 
+
+
             {/* Clear Confirmation Modal */}
             <ConfirmModal
                 isOpen={clearModal.open}
-                title={`Clear ${clearModal.type === 'recents' ? 'Recents' : 'Logs'}?`}
-                message={`This action cannot be undone. All recorded ${clearModal.type} will be permanently deleted.`}
-                confirmText="Clear All"
+                title={clearModal.type === 'recents' ? t.confirmModal.clearRecents : t.confirmModal.clearLogs}
+                message={clearModal.type === 'recents' ? t.confirmModal.clearRecentsMsg : t.confirmModal.clearLogsMsg}
+                confirmText={t.confirmModal.clearAll}
                 onConfirm={confirmClear}
                 onCancel={() => setClearModal({ ...clearModal, open: false })}
                 variant="danger"

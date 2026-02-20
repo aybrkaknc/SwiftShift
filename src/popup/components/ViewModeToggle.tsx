@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { List, Grid, Maximize2 } from 'lucide-react';
+import { useTranslation } from '../../utils/useTranslation';
 
 export type ViewMode = 'compact' | 'bento' | 'gallery';
 
@@ -14,10 +15,12 @@ interface ViewModeToggleProps {
 }
 
 export const ViewModeToggle: React.FC<ViewModeToggleProps> = ({ mode, onChange }) => {
+    const { t } = useTranslation();
+
     const modes: { id: ViewMode; icon: React.ReactNode; title: string }[] = [
-        { id: 'compact', icon: <List size={10} />, title: 'Compact View' },
-        { id: 'bento', icon: <Grid size={10} />, title: 'Bento View' },
-        { id: 'gallery', icon: <Maximize2 size={10} />, title: 'Gallery View' }
+        { id: 'compact', icon: <List size={10} />, title: t.viewMode.compact },
+        { id: 'bento', icon: <Grid size={10} />, title: t.viewMode.bento },
+        { id: 'gallery', icon: <Maximize2 size={10} />, title: t.viewMode.gallery }
     ];
 
     return (
@@ -27,8 +30,8 @@ export const ViewModeToggle: React.FC<ViewModeToggleProps> = ({ mode, onChange }
                     key={m.id}
                     onClick={() => onChange(m.id)}
                     className={`p-1 rounded-full transition-all ${mode === m.id
-                            ? 'bg-primary text-background'
-                            : 'text-muted hover:text-white'
+                        ? 'bg-primary text-background'
+                        : 'text-muted hover:text-white'
                         }`}
                     title={m.title}
                 >

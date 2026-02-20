@@ -35,19 +35,26 @@
         - **Submenu:** "More..." (Full Hierarchy).
 
 ## 3. Visual Language (UI System)
-## 3. Visual Language (UI System)
 - **Style:** Luxury/Premium (Deep Navy Background, Gold Accents).
 - **Colors:**
-    - **Background:** Deep Navy (`#0a192f` / `#112240`).
-    - **Primary:** Gold / Amber (`#ffd700` / `#f59e0b`).
-    - **Text:** White / Light Grey.
-- **Icons:** Lucide / Heroicons (Outline style).
+    - **Background:** Deep Navy (`#0b1121`).
+    - **Surface:** Navy Blue (`#15203b`).
+    - **Primary:** Gold / Amber (`#f4ab25`).
+- **Layout Patterns:**
+    - **Integrated Edge Action Bar:** Actions are embedded into the right edge of list items, appearing on hover with a theme-aware gradient fade (Navy/Dark, White/Light).
+    - **Vertical Hierarchy Lines:** Sections use vertical gradient lines descending from chevrons to create a "Tree View" effect, improving structural clarity.
+- **Icons:** Lucide-React (Customized sizes for visibility, 16px-18px for main actions).
 - **Animations:**
-    - **Toast:** Spring physics (iOS style slide-in/out).
-    - **Loaders:** Shimmering Skeleton bars (No spinning circles).
-    - **Inputs:** Micro-interactions (Focus rings, validation colors).
+    - **Toast:** Bottom-aligned, spring-physics slide-in from bottom to top.
+    - **Loaders:** Shimmering Skeleton bars & conditional spin animations for manual refresh.
+    - **Hover Effects:** Scale transitions and border-glows on interactive recents.
 
-## 4. Operational Scenarios
+## 4. Recents Interactivity
+- **Smart Links:** All links in the recents history are directly clickable and open in a new tab.
+- **Image Previews:** Images and file-based visuals expand/open in original quality when clicked.
+- **Event Management:** Click events on specific content are isolated (stopPropagation) to prevent unintentional modal expansion.
+
+## 5. Operational Scenarios
 
 ### Scenario A: Sending Text/Link
 (Standard Flow)

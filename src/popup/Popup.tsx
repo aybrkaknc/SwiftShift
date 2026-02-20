@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Zap, ArrowRight } from 'lucide-react';
 import { StorageService, UserProfile, TelegramTarget } from '../services/storage';
 import { DashboardView } from './views/DashboardView';
-import Welcome from '../welcome/Welcome';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { TranslationProvider } from '../utils/TranslationContext';
 import '../styles/globals.css';
 
 /**
@@ -35,8 +35,6 @@ function Popup() {
         setLoading(false);
     };
 
-
-
     // Manual Refresh just reloads local storage for now to keep UI in sync
     const handleRefresh = async (currentProfile = profile) => {
         if (!currentProfile) return;
@@ -57,6 +55,7 @@ function Popup() {
         // Refresh context menu
         chrome.runtime.sendMessage({ type: 'REFRESH_MENU' });
     };
+
     const handleAddManualTarget = async (newTarget: TelegramTarget) => {
         if (!profile) return;
 
@@ -102,11 +101,6 @@ function Popup() {
         const updatedTargets = targets.map(t =>
             t.id === targetId ? { ...t, pinned: !t.pinned } : t
         );
-        // Sort: Pinned first, then by name (optional, but good for consistent storage)
-        // Actually, let's just save the state, view handles sorting usually. 
-        // But reordering storage might be better for consistency across devices?
-        // For now just update state.
-
         await StorageService.updateProfileTargets(profile.id, updatedTargets);
         setTargets(updatedTargets);
         chrome.runtime.sendMessage({ type: 'REFRESH_MENU' });
@@ -122,33 +116,61 @@ function Popup() {
     // --- RENDERING ---
 
     if (loading) {
-        return <div className="w-[400px] h-[560px] bg-background flex items-center justify-center text-primary"><RefreshCw className="animate-spin" /></div>;
+        return (
+            <TranslationProvider>
+                <div className="w-[400px] h-[200px] bg-background flex items-center justify-center text-primary">
+                    <RefreshCw className="animate-spin" />
+                </div>
+            </TranslationProvider>
+        );
     }
 
-    // View Routing
+    // Profil yoksa kurulum ekranına yönlendirme butonu göster
     if (!profile) {
+        const openWelcome = () => {
+            chrome.tabs.create({ url: chrome.runtime.getURL('welcome.html') });
+            window.close();
+        };
+
         return (
-            <div className="w-[400px] h-[560px] bg-background overflow-hidden">
-                <Welcome embedded onComplete={loadProfile} />
-            </div>
+            <TranslationProvider>
+                <div className="w-[400px] bg-background flex flex-col items-center justify-center p-8 gap-6">
+                    <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                        <Zap className="text-primary fill-primary" size={28} />
+                    </div>
+                    <div className="text-center space-y-2">
+                        <h2 className="text-xl font-bold text-white tracking-tight">SwiftShift</h2>
+                        <p className="text-sm text-muted">Telegram botunuzu bağlayarak başlayın.</p>
+                    </div>
+                    <button
+                        onClick={openWelcome}
+                        className="w-full py-3 rounded-xl bg-primary text-background font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary-hover transition-all active:scale-[0.98] shadow-[0_0_20px_-5px_rgba(244,171,37,0.3)]"
+                    >
+                        Kuruluma Başla
+                        <ArrowRight size={16} />
+                    </button>
+                </div>
+            </TranslationProvider>
         );
     }
 
     return (
-        <ErrorBoundary>
-            <div className="w-[400px] h-[560px] bg-background">
-                <DashboardView
-                    profile={profile}
-                    targets={targets}
-                    onRefresh={() => handleRefresh(profile)}
-                    onLogout={handleLogout}
-                    onDeleteTarget={handleDeleteTarget}
-                    onAddTarget={handleAddManualTarget}
-                    onRenameTarget={handleRenameTarget}
-                    onTogglePin={handleTogglePin}
-                />
-            </div>
-        </ErrorBoundary>
+        <TranslationProvider>
+            <ErrorBoundary>
+                <div className="w-[400px] h-[560px] bg-background">
+                    <DashboardView
+                        profile={profile}
+                        targets={targets}
+                        onRefresh={() => handleRefresh(profile)}
+                        onLogout={handleLogout}
+                        onDeleteTarget={handleDeleteTarget}
+                        onAddTarget={handleAddManualTarget}
+                        onRenameTarget={handleRenameTarget}
+                        onTogglePin={handleTogglePin}
+                    />
+                </div>
+            </ErrorBoundary>
+        </TranslationProvider>
     );
 }
 

@@ -7,6 +7,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { ErrorService, AppError, ErrorCodes } from '../services/errorService';
+import { getTranslations } from '../utils/i18nUtils';
 
 interface Props {
     /** Alt bileşenler */
@@ -93,6 +94,9 @@ export class ErrorBoundary extends Component<Props, State> {
                 return this.props.fallback;
             }
 
+            // Class component olduğu için hook yerine getTranslations() kullanılır
+            const t = getTranslations();
+
             // Varsayılan hata UI'ı
             return (
                 <div className="flex-1 flex items-center justify-center p-6">
@@ -104,9 +108,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
                         {/* Başlık ve Mesaj */}
                         <div className="space-y-2">
-                            <h2 className="text-lg font-bold text-white">Something went wrong</h2>
+                            <h2 className="text-lg font-bold text-white">{t.errorBoundary.title}</h2>
                             <p className="text-xs text-muted leading-relaxed">
-                                An unexpected error occurred. Please try again or reload the extension.
+                                {t.errorBoundary.message}
                             </p>
                         </div>
 
@@ -125,14 +129,14 @@ export class ErrorBoundary extends Component<Props, State> {
                                 onClick={this.handleReset}
                                 className="px-4 py-2 bg-surface/50 text-white text-xs font-bold rounded-full border border-white/10 hover:bg-surface transition-all"
                             >
-                                Try Again
+                                {t.errorBoundary.tryAgain}
                             </button>
                             <button
                                 onClick={this.handleReload}
                                 className="px-4 py-2 bg-primary text-background text-xs font-bold rounded-full hover:bg-primary-hover transition-all flex items-center gap-2"
                             >
                                 <RefreshCw size={12} />
-                                Reload
+                                {t.errorBoundary.reload}
                             </button>
                         </div>
                     </div>

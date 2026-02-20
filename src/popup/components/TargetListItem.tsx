@@ -6,6 +6,8 @@
 import React from 'react';
 import { TelegramTarget } from '../../services/storage';
 import { Hash, Megaphone, Users, Bookmark, Send, Trash2, Edit2, Check, Pin, ChevronRight } from 'lucide-react';
+import { useTranslation } from '../../utils/useTranslation';
+import { useSpotlight } from '../../hooks/useSpotlight';
 
 interface TargetListItemProps {
     target: TelegramTarget;
@@ -57,14 +59,18 @@ export const TargetListItem: React.FC<TargetListItemProps> = ({
     onSendDirect,
     isSending
 }) => {
+    const { t } = useTranslation();
+    const { containerRef, handleMouseMove } = useSpotlight<HTMLDivElement>();
     const hasChildren = children.length > 0;
     const isEditing = editingId === target.id;
 
     return (
         <div className="flex flex-col">
             <div
+                ref={containerRef}
+                onMouseMove={handleMouseMove}
                 className={`
-                    relative flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all group
+                    relative flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer magnetic-item spotlight-effect group overflow-hidden
                     ${isSelected
                         ? 'border-primary/30 bg-primary/5'
                         : 'border-transparent hover:border-white/5 hover:bg-surface/30'
@@ -72,31 +78,38 @@ export const TargetListItem: React.FC<TargetListItemProps> = ({
                 `}
                 onClick={() => onSelect(target.id)}
             >
-                {/* Expand Toggle */}
-                {hasChildren && (
-                    <button
-                        onClick={(e) => {
+                {/* Icon & Expand Toggle Unified */}
+                <div
+                    className={`
+                        w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 flex-shrink-0 relative group/icon
+                        ${isSelected ? 'bg-primary/20 text-primary' : 'bg-surface/50 text-muted'}
+                        ${hasChildren ? 'cursor-pointer hover:bg-primary/30 hover:text-primary' : ''}
+                    `}
+                    onClick={(e) => {
+                        if (hasChildren) {
                             e.stopPropagation();
                             onToggleExpand(target.id);
-                        }}
-                        className="text-muted hover:text-white transition-colors"
-                    >
-                        <ChevronRight
-                            size={12}
-                            className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
-                        />
-                    </button>
-                )}
+                        }
+                    }}
+                >
+                    {/* Megaphone/Group Icon - Hidden on hover if has children */}
+                    <div className={`transition-opacity duration-200 ${hasChildren ? 'group-hover/icon:opacity-0' : 'opacity-100'}`}>
+                        {renderIcon(target.type)}
+                    </div>
 
-                {/* Icon */}
-                <div className={`
-                    w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 flex-shrink-0 relative
-                    ${isSelected ? 'bg-primary/20 text-primary' : 'bg-surface/50 text-muted'}
-                `}>
-                    {renderIcon(target.type)}
-                    {/* Pinned Indicator on Icon */}
+                    {/* Chevron - Shown only on hover if has children */}
+                    {hasChildren && (
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/icon:opacity-100 transition-opacity duration-200">
+                            <ChevronRight
+                                size={14}
+                                className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                            />
+                        </div>
+                    )}
+
+                    {/* Pinned Indicator */}
                     {target.pinned && (
-                        <div className="absolute -top-1 -right-1 bg-background rounded-full w-3.5 h-3.5 flex items-center justify-center border border-white/10">
+                        <div className="absolute -top-1 -right-1 bg-background rounded-full w-3.5 h-3.5 flex items-center justify-center border border-white/10 z-10">
                             <Pin size={8} className="text-primary fill-primary" />
                         </div>
                     )}
@@ -130,38 +143,38 @@ export const TargetListItem: React.FC<TargetListItemProps> = ({
                     )}
                 </div>
 
-                {/* Actions (Floating Glass Pill) */}
+                {/* Actions (Integrated Edge) */}
                 {!editingId && (
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-1 rounded-full bg-surface/80 backdrop-blur-md border border-white/10 shadow-xl opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 z-10">
+                    <div className="absolute inset-y-0 right-0 flex items-center gap-1 px-3 action-bar-gradient opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 z-10">
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 if (onTogglePin) onTogglePin(target.id);
                             }}
-                            className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${target.pinned ? 'text-primary bg-primary/10' : 'text-muted hover:text-white hover:bg-white/10'}`}
-                            title={target.pinned ? "Unpin" : "Pin to top"}
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${target.pinned ? 'text-primary' : 'text-muted hover:text-white hover:bg-white/10'}`}
+                            title={target.pinned ? t.targetItem.unpin : t.targetItem.pinToTop}
                         >
-                            <Pin size={14} className={target.pinned ? "fill-primary" : ""} />
+                            <Pin size={16} className={target.pinned ? "fill-primary" : ""} />
                         </button>
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onStartEdit(target);
                             }}
-                            className="w-7 h-7 rounded-full flex items-center justify-center text-muted hover:text-white hover:bg-white/10 transition-all"
-                            title="Rename"
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-white hover:bg-white/10 transition-all"
+                            title={t.targetItem.rename}
                         >
-                            <Edit2 size={14} />
+                            <Edit2 size={16} />
                         </button>
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onDelete(target.id);
                             }}
-                            className="w-7 h-7 rounded-full flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition-all"
-                            title="Remove"
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition-all"
+                            title={t.targetItem.remove}
                         >
-                            <Trash2 size={14} />
+                            <Trash2 size={16} />
                         </button>
                         <div className="w-px h-4 bg-white/10 mx-0.5" />
                         <button
@@ -170,36 +183,43 @@ export const TargetListItem: React.FC<TargetListItemProps> = ({
                                 onSendDirect(target.id);
                             }}
                             disabled={isSending}
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-primary hover:text-white hover:bg-primary transition-all active:scale-90"
-                            title="Send Current"
+                            className="w-9 h-9 rounded-lg flex items-center justify-center text-primary hover:text-white hover:bg-primary transition-all active:scale-90"
+                            title={t.targetItem.sendCurrent}
                         >
-                            <Send size={16} strokeWidth={2.5} />
+                            <Send size={18} strokeWidth={2.5} />
                         </button>
                     </div>
                 )}
             </div>
 
-            {/* Child Topics Render */}
-            {hasChildren && isExpanded && (
-                <div className="ml-6 pl-3 border-l border-white/10 mt-1.5 flex flex-col gap-1">
-                    {children.map(child => (
-                        <ChildTopicItem
-                            key={child.id}
-                            child={child}
-                            isSelected={editingId === null && child.id === target.id ? false : child.id === target.id}
-                            editingId={editingId}
-                            editName={editName}
-                            onSelect={onSelect}
-                            onStartEdit={onStartEdit}
-                            onSaveEdit={onSaveEdit}
-                            onCancelEdit={onCancelEdit}
-                            onEditNameChange={onEditNameChange}
-                            onDelete={onDelete}
-                            onTogglePin={onTogglePin}
-                            onSendDirect={onSendDirect}
-                            isSending={isSending}
-                        />
-                    ))}
+            {/* Child Topics Render with Animation */}
+            {hasChildren && (
+                <div className={`
+                    grid transition-all duration-300 ease-in-out
+                    ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-1.5' : 'grid-rows-[0fr] opacity-0 mt-0'}
+                `}>
+                    <div className="overflow-hidden">
+                        <div className="ml-[26px] pl-3 pt-1 border-l border-white/10 flex flex-col gap-1">
+                            {children.map(child => (
+                                <ChildTopicItem
+                                    key={child.id}
+                                    child={child}
+                                    isSelected={editingId === null && child.id === target.id ? false : child.id === target.id}
+                                    editingId={editingId}
+                                    editName={editName}
+                                    onSelect={onSelect}
+                                    onStartEdit={onStartEdit}
+                                    onSaveEdit={onSaveEdit}
+                                    onCancelEdit={onCancelEdit}
+                                    onEditNameChange={onEditNameChange}
+                                    onDelete={onDelete}
+                                    onTogglePin={onTogglePin}
+                                    onSendDirect={onSendDirect}
+                                    isSending={isSending}
+                                />
+                            ))}
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
@@ -240,12 +260,16 @@ const ChildTopicItem: React.FC<ChildTopicItemProps> = ({
     onSendDirect,
     isSending
 }) => {
+    const { t } = useTranslation();
+    const { containerRef, handleMouseMove } = useSpotlight<HTMLDivElement>();
     const isEditing = editingId === child.id;
 
     return (
         <div
+            ref={containerRef}
+            onMouseMove={handleMouseMove}
             className={`
-                relative flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all group
+                relative flex items-center gap-2 p-2 rounded-lg border cursor-pointer magnetic-item spotlight-effect group overflow-hidden
                 ${isSelected
                     ? 'border-primary/30 bg-primary/5'
                     : 'border-transparent hover:border-white/5 hover:bg-surface/30'
@@ -280,38 +304,38 @@ const ChildTopicItem: React.FC<ChildTopicItemProps> = ({
                 )}
             </div>
 
-            {/* Actions (Floating Glass Pill - Compact) */}
+            {/* Actions (Integrated Edge - Compact) */}
             {!editingId && (
-                <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-1.5 py-1 rounded-xl bg-surface/80 backdrop-blur-md border border-white/10 shadow-xl opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 z-10">
+                <div className="absolute inset-y-0 right-0 flex items-center gap-1.5 px-2.5 action-bar-gradient opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 z-10">
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
                             if (onTogglePin) onTogglePin(child.id);
                         }}
-                        className={`w-5 h-5 rounded flex items-center justify-center transition-all ${child.pinned ? 'text-primary' : 'text-muted hover:text-white hover:bg-white/10'}`}
-                        title={child.pinned ? "Unpin" : "Pin"}
+                        className={`w-6 h-6 rounded flex items-center justify-center transition-all ${child.pinned ? 'text-primary' : 'text-muted hover:text-white hover:bg-white/10'}`}
+                        title={child.pinned ? t.targetItem.unpin : t.targetItem.pin}
                     >
-                        <Pin size={10} className={child.pinned ? "fill-primary" : ""} />
+                        <Pin size={13} className={child.pinned ? "fill-primary" : ""} />
                     </button>
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
                             onStartEdit(child);
                         }}
-                        className="w-5 h-5 rounded flex items-center justify-center text-muted hover:text-white hover:bg-white/10 transition-all"
-                        title="Rename"
+                        className="w-6 h-6 rounded flex items-center justify-center text-muted hover:text-white hover:bg-white/10 transition-all"
+                        title={t.targetItem.rename}
                     >
-                        <Edit2 size={10} />
+                        <Edit2 size={13} />
                     </button>
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
                             onDelete(child.id);
                         }}
-                        className="w-5 h-5 rounded flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition-all"
-                        title="Remove"
+                        className="w-6 h-6 rounded flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition-all"
+                        title={t.targetItem.remove}
                     >
-                        <Trash2 size={10} />
+                        <Trash2 size={13} />
                     </button>
                     <div className="w-px h-3 bg-white/10 mx-0.5" />
                     <button
@@ -320,10 +344,10 @@ const ChildTopicItem: React.FC<ChildTopicItemProps> = ({
                             onSendDirect(child.id);
                         }}
                         disabled={isSending}
-                        className="w-6 h-6 rounded-md flex items-center justify-center text-primary hover:text-white hover:bg-primary transition-all active:scale-90"
-                        title="Send"
+                        className="w-7 h-7 rounded flex items-center justify-center text-primary hover:text-white hover:bg-primary transition-all active:scale-90"
+                        title={t.targetItem.send}
                     >
-                        <Send size={11} strokeWidth={2.5} />
+                        <Send size={15} strokeWidth={2.5} />
                     </button>
                 </div>
             )}
