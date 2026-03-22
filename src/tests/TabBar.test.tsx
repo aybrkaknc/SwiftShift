@@ -7,6 +7,14 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { TabBar } from '../popup/components/TabBar';
 
+vi.mock('../utils/useTranslation', () => ({
+    useTranslation: () => ({
+        t: {
+            tabs: { channels: 'Channels', recents: 'Recents', logs: 'Logs' }
+        }
+    })
+}));
+
 describe('TabBar', () => {
     it('üç sekme render etmeli', () => {
         const onTabChange = vi.fn();
@@ -21,15 +29,15 @@ describe('TabBar', () => {
         const onTabChange = vi.fn();
         render(<TabBar activeTab="recents" onTabChange={onTabChange} />);
 
-        const recentsButton = screen.getByText('Recents').closest('button');
-        expect(recentsButton?.className).toContain('bg-primary');
+        const recentsButton = screen.getByRole('button', { name: /Recents/i });
+        expect(recentsButton.className).toContain('bg-primary');
     });
 
     it('sekme tıklandığında callback çağrılmalı', () => {
         const onTabChange = vi.fn();
         render(<TabBar activeTab="channels" onTabChange={onTabChange} />);
 
-        fireEvent.click(screen.getByText('Logs'));
+        fireEvent.click(screen.getByRole('button', { name: /Logs/i }));
 
         expect(onTabChange).toHaveBeenCalledWith('logs');
     });
@@ -38,13 +46,13 @@ describe('TabBar', () => {
         const onTabChange = vi.fn();
         render(<TabBar activeTab="channels" onTabChange={onTabChange} />);
 
-        fireEvent.click(screen.getByText('Channels'));
+        fireEvent.click(screen.getByRole('button', { name: /Channels/i }));
         expect(onTabChange).toHaveBeenCalledWith('channels');
 
-        fireEvent.click(screen.getByText('Recents'));
+        fireEvent.click(screen.getByRole('button', { name: /Recents/i }));
         expect(onTabChange).toHaveBeenCalledWith('recents');
 
-        fireEvent.click(screen.getByText('Logs'));
+        fireEvent.click(screen.getByRole('button', { name: /Logs/i }));
         expect(onTabChange).toHaveBeenCalledWith('logs');
     });
 });

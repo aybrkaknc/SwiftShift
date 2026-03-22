@@ -49,11 +49,11 @@ export const RecentsView: React.FC<RecentsViewProps> = ({ recents, onDelete, onR
     if (recents.length === 0) {
         return (
             <div className="flex-1 flex items-center justify-center px-4">
-                <div className="text-center py-10 px-6 flex flex-col items-center gap-4 bg-surface/20 rounded-2xl border border-white/5 w-full">
-                    <Clock size={20} className="text-muted" />
-                    <div className="space-y-1">
-                        <p className="text-xs font-bold">{t.recents.noRecents}</p>
-                        <p className="text-[9px] text-muted leading-tight">{t.recents.noRecentsHint}</p>
+                <div className="text-center py-12 px-6 flex flex-col items-center gap-4 w-full opacity-60">
+                    <Clock size={24} className="text-muted" strokeWidth={1.5} />
+                    <div className="space-y-1.5 text-center">
+                        <p className="text-[15px] font-bold tracking-tight">{t.recents.noRecents}</p>
+                        <p className="text-[12px] text-muted leading-relaxed max-w-[260px] mx-auto">{t.recents.noRecentsHint}</p>
                     </div>
                 </div>
             </div>
@@ -66,10 +66,10 @@ export const RecentsView: React.FC<RecentsViewProps> = ({ recents, onDelete, onR
                 {/* Section Header - Sticky */}
                 <div className="flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-sm py-2 z-10">
                     <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-muted uppercase tracking-widest">{t.recents.history}</span>
+                        <span className="text-[12px] font-bold text-muted uppercase tracking-widest">{t.recents.history}</span>
                         <button
                             onClick={onClearAll}
-                            className="text-[9px] font-bold text-muted/50 hover:text-danger hover:bg-danger/5 px-2 py-0.5 rounded-full border border-white/5 transition-all"
+                            className="text-[11px] font-bold text-muted/50 hover:text-danger hover:bg-danger/5 px-3 py-1 rounded-full border border-white/5 transition-all"
                         >
                             {t.recents.clearAll}
                         </button>

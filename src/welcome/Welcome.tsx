@@ -3,6 +3,7 @@ import { Github, ArrowRight, Check, Copy, ExternalLink, ChevronRight, ChevronLef
 import { StorageService } from '../services/storage';
 import { TelegramService } from '../services/telegram';
 import { useTranslation } from '../utils/useTranslation';
+import { browser } from '../utils/browser-api';
 
 interface WelcomeProps {
     onComplete?: () => void;
@@ -18,6 +19,9 @@ const Welcome = ({ onComplete, embedded = false }: WelcomeProps) => {
     const [isConnecting, setIsConnecting] = useState(false);
     const [botName, setBotName] = useState('');
     const [copied, setCopied] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+
+
 
     const handleCopy = (text: string) => {
         navigator.clipboard.writeText(text);
@@ -26,8 +30,9 @@ const Welcome = ({ onComplete, embedded = false }: WelcomeProps) => {
     };
 
     const handleConnect = async () => {
+        setErrorMessage('');
         if (!token.includes(':')) {
-            alert('Invalid Token Format');
+            setErrorMessage('Invalid Token Format');
             return;
         }
 
@@ -50,14 +55,14 @@ const Welcome = ({ onComplete, embedded = false }: WelcomeProps) => {
             };
 
             await StorageService.saveProfile(newProfile);
-            chrome.runtime.sendMessage({ type: 'REFRESH_MENU' });
+            browser.runtime.sendMessage({ type: 'REFRESH_MENU' });
             setBotName(res.result.first_name);
             setStep('success');
 
             // If chat ID wasn't detected, we might want to prompt the user in the success step
             // But for now, we just save what we have. The dashboard will handle missing IDs.
         } else {
-            alert('Connection Failed: Invalid Token');
+            setErrorMessage('Connection Failed: Invalid Token');
         }
         setIsConnecting(false);
     };
@@ -69,19 +74,14 @@ const Welcome = ({ onComplete, embedded = false }: WelcomeProps) => {
             <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
             <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
 
+
+
             {/* Main Content */}
             <div className={`max-w-4xl w-full z-10 flex flex-col items-center ${embedded ? '' : 'justify-center mx-auto'}`}>
 
                 {step === 'intro' ? (
-                    <div className={`text-center ${embedded ? 'space-y-6' : 'space-y-8'} animate-fade-in`}>
+                    <div className={`text-center ${embedded ? 'space-y-6' : 'space-y-8'} animate-slide-up-fade`}>
                         <div className={`${embedded ? 'space-y-3' : 'space-y-4'}`}>
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface border border-white/10 text-xs font-medium text-primary tracking-wide uppercase mx-auto">
-                                <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                                </span>
-                                {t.welcome.betaBadge}
-                            </div>
                             <h1 className={`${embedded ? 'text-4xl' : 'text-5xl md:text-7xl'} font-bold tracking-tight bg-gradient-to-br from-white via-white to-gray-500 bg-clip-text text-transparent`}>
                                 {t.welcome.title}
                             </h1>
@@ -109,7 +109,7 @@ const Welcome = ({ onComplete, embedded = false }: WelcomeProps) => {
                         </div>
                     </div>
                 ) : step === 'tutorial' ? (
-                    <div className={`animate-fade-in w-full max-w-2xl mx-auto bg-surface/30 backdrop-blur-md border border-white/10 rounded-3xl ${embedded ? 'p-6' : 'p-8 md:p-10'} shadow-2xl relative overflow-hidden transition-all duration-300`}>
+                    <div className={`animate-slide-up-fade w-full max-w-2xl mx-auto bg-surface/30 backdrop-blur-md border border-white/10 rounded-3xl ${embedded ? 'p-6' : 'p-8 md:p-10'} shadow-2xl relative overflow-hidden transition-all duration-300`}>
                         {/* Progress Bar */}
                         <div className="absolute top-0 left-0 h-1 bg-white/10 w-full">
                             <div
@@ -121,7 +121,7 @@ const Welcome = ({ onComplete, embedded = false }: WelcomeProps) => {
                         {/* Content Steps */}
                         <div className="min-h-[320px] flex flex-col justify-between">
                             {tutorialStep === 1 && (
-                                <div className="space-y-6 animate-fade-in">
+                                <div className="space-y-6 animate-slide-up-fade">
                                     <div className="space-y-2 text-center">
                                         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/20 text-primary mb-2">
                                             <span className="text-xl font-bold">1</span>
@@ -159,7 +159,7 @@ const Welcome = ({ onComplete, embedded = false }: WelcomeProps) => {
                             )}
 
                             {tutorialStep === 2 && (
-                                <div className="space-y-6 animate-fade-in">
+                                <div className="space-y-6 animate-slide-up-fade">
                                     <div className="space-y-2 text-center">
                                         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 mb-2">
                                             <span className="text-xl font-bold">2</span>
@@ -188,7 +188,7 @@ const Welcome = ({ onComplete, embedded = false }: WelcomeProps) => {
                             )}
 
                             {tutorialStep === 3 && (
-                                <div className="space-y-6 animate-fade-in">
+                                <div className="space-y-6 animate-slide-up-fade">
                                     <div className="space-y-2 text-center">
                                         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-500/20 text-green-400 mb-2">
                                             <span className="text-xl font-bold">3</span>
@@ -203,7 +203,7 @@ const Welcome = ({ onComplete, embedded = false }: WelcomeProps) => {
                                         <div className="bg-surface/50 p-4 rounded-xl border border-white/10 hover:bg-surface/80 transition-colors">
                                             <div className="text-[10px] font-bold text-primary mb-1 uppercase tracking-wider">{t.tutorial.step3.recommended}</div>
                                             <h4 className="font-bold text-white mb-2">{t.tutorial.step3.recTitle}</h4>
-                                            <p className="text-xs text-muted mb-3 leading-relaxed">
+                                            <p className="text-xs text-muted mb-3 leading-relaxed whitespace-pre-line">
                                                 {t.tutorial.step3.recDesc}
                                             </p>
                                             <a href="https://web.telegram.org" target="_blank" className="text-xs font-bold text-primary flex items-center gap-1 hover:underline">
@@ -254,7 +254,7 @@ const Welcome = ({ onComplete, embedded = false }: WelcomeProps) => {
                         </div>
                     </div>
                 ) : step === 'name_input' ? (
-                    <div className={`animate-fade-in max-w-md w-full mx-auto bg-surface/30 backdrop-blur-md border border-white/10 rounded-3xl ${embedded ? 'p-6' : 'p-8'} shadow-2xl text-center`}>
+                    <div className={`animate-slide-up-fade max-w-md w-full mx-auto bg-surface/30 backdrop-blur-md border border-white/10 rounded-3xl ${embedded ? 'p-6' : 'p-8'} shadow-2xl text-center`}>
                         <h2 className={`${embedded ? 'text-xl' : 'text-2xl'} font-bold mb-2 text-white`}>{t.nameInput.title}</h2>
                         <p className="text-muted text-xs mb-6">{t.nameInput.subtitle}</p>
 
@@ -280,7 +280,7 @@ const Welcome = ({ onComplete, embedded = false }: WelcomeProps) => {
                         </div>
                     </div>
                 ) : step === 'input' ? (
-                    <div className={`animate-fade-in max-w-md w-full mx-auto bg-surface/30 backdrop-blur-md border border-white/10 rounded-3xl ${embedded ? 'p-6' : 'p-8'} shadow-2xl`}>
+                    <div className={`animate-slide-up-fade max-w-md w-full mx-auto bg-surface/30 backdrop-blur-md border border-white/10 rounded-3xl ${embedded ? 'p-6' : 'p-8'} shadow-2xl`}>
                         <h2 className={`${embedded ? 'text-xl' : 'text-2xl'} font-bold mb-2 text-center text-white`}>{t.connect.title}</h2>
                         <p className="text-muted text-xs text-center mb-6">{t.connect.subtitle}</p>
 
@@ -296,6 +296,13 @@ const Welcome = ({ onComplete, embedded = false }: WelcomeProps) => {
                                 />
                             </div>
 
+                            {errorMessage && (
+                                <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-xs text-red-400 animate-slide-up-fade">
+                                    <AlertCircle size={14} className="flex-shrink-0" />
+                                    <span>{errorMessage}</span>
+                                </div>
+                            )}
+
                             <button
                                 onClick={handleConnect}
                                 disabled={isConnecting}
@@ -306,7 +313,7 @@ const Welcome = ({ onComplete, embedded = false }: WelcomeProps) => {
                         </div>
                     </div>
                 ) : (
-                    <div className={`animate-fade-in max-w-md w-full mx-auto bg-surface/30 backdrop-blur-md border border-white/10 rounded-3xl ${embedded ? 'p-6' : 'p-8'} shadow-2xl text-center`}>
+                    <div className={`animate-slide-up-fade max-w-md w-full mx-auto bg-surface/30 backdrop-blur-md border border-white/10 rounded-3xl ${embedded ? 'p-6' : 'p-8'} shadow-2xl text-center`}>
                         <div className={`${embedded ? 'w-12 h-12 mb-4' : 'w-16 h-16 mb-6'} bg-primary/20 text-primary rounded-full flex items-center justify-center mx-auto`}>
                             <Check size={embedded ? 24 : 32} strokeWidth={4} />
                         </div>
@@ -330,11 +337,6 @@ const Welcome = ({ onComplete, embedded = false }: WelcomeProps) => {
                 )}
 
             </div>
-
-            <style>{`
-    .animate-fade-in { animation: fadeIn 0.5s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-`}</style>
         </div>
     );
 };

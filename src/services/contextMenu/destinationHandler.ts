@@ -4,6 +4,7 @@
  * i18n: getTranslations() ile çeviri desteği.
  */
 
+import { browser } from '../../utils/browser-api';
 import { StorageService, TelegramTarget } from '../storage';
 import { TelegramService } from '../telegram';
 import { LogService } from '../logService';
@@ -16,7 +17,7 @@ import { injectToast } from '../injectToast';
  * @param onMenuRebuild Menü yeniden oluşturma callback'i
  */
 export async function handleAddDestination(
-    tab: chrome.tabs.Tab | undefined,
+    tab: any,
     onMenuRebuild: () => void
 ): Promise<void> {
     const t = getTranslations();
@@ -24,6 +25,14 @@ export async function handleAddDestination(
     if (!tab?.url || !tab.id) {
         if (tab?.id) {
             await injectToast(tab.id, t.destination.error, t.destination.cannotDetectPage, 'error');
+        }
+        return;
+    }
+
+    // Telegram Web A Sürüm Kontrolü
+    if (tab.url.includes('web.telegram.org/') && !tab.url.includes('/a/')) {
+        if (tab.id) {
+            await injectToast(tab.id, (t.destination as any).wrongWebVersion || "Sürüm Uyarısı", (t.destination as any).wrongWebVersionMsg || "Lütfen Telegram Web A sürümüne geçiniz.", 'error');
         }
         return;
     }
@@ -78,7 +87,7 @@ export async function handleAddDestination(
     // Telegram Web A: Tab başlığında topic adı yok, DOM'dan oku
     if (threadId && !extractedParentName && tab.id) {
         try {
-            const [result] = await chrome.scripting.executeScript({
+            const [result] = await (browser.scripting as any).executeScript({
                 target: { tabId: tab.id },
                 func: () => {
                     // Telegram Web A/K: Konu başlığını header'dan bul
@@ -195,7 +204,7 @@ export async function handleAddDestination(
         details: `Type: ${type}, ID: ${storageId}`
     });
 
-    chrome.runtime.sendMessage({ type: 'REFRESH_MENU' });
+    await browser.runtime.sendMessage({ type: 'REFRESH_MENU' });
     onMenuRebuild();
 
     if (tab.id) {

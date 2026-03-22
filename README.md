@@ -1,70 +1,69 @@
 # SwiftShift 🚀
 
-SwiftShift is a premium Chrome extension designed to instantly bridge web content to Telegram. Featuring a sleek glassmorphism UI and hierarchical target management, it allows seamless sharing to channels, groups, and specific forum topics.
+SwiftShift is a high-performance browser extension designed to instantly bridge web content to Telegram. Featuring a modern interface and hierarchical target management, it allows seamless sharing of links, selections, captures, and locations to channels, groups, and specific forum topics.
 
-![Banner](https://raw.githubusercontent.com/aybrkaknc/SwiftShift/main/public/icons/icon128.png)
-
-## ✨ Key Features
-
-- **Hierarchical Destinations:** Organizes topics under their parent channels/groups with **Vertical Hierarchy Lines** for a clear tree-view flow.
-- **Glassmorphism UI:** A modern, high-end interface built with Tailwind CSS, featuring subtle glass effects and custom scrollbars.
-- **Integrated Action Bar (Integrated Edge):** Hover-triggered actions seamlessly embedded into the right edge of list items with theme-aware gradients.
-- **Auto-Discovery:** Automatically detects channel names and bot details when adding new topics.
-- **Secure Storage:** All configurations and bot tokens are stored securely in your browser's local storage via IndexedDB.
-- **One-Click Sharing:** Instantly send the current page link, selection, or page capture to multiple Telegram destinations.
-- **Clickable Recents:** Directly access links and images from your history by clicking items in the Recents tab.
-
-### 🆕 v1.0.0 Features
-- **🎨 Design System 2.0:** New vertical accent lines, theme-aware action bars, and refined typography.
-- **📷 Page Capture:** Capture the visible area of any webpage as PNG (Compressed or Uncompressed).
-- **✂️ Region Selection:** Select a specific area on the page with your mouse and capture only that region.
-- **📍 Location Sharing:** Google Maps coordinates are automatically detected and sent as interactive Telegram locations.
-- **🎞️ Enhanced Media:** Full support for GIFs, Audio files, WebP images, and SVG documents.
-- **🚀 Turbo Refresh:** Added spinning animations and manual refresh for all list views.
-- **🔔 Pro Toast:** Bottom-aligned, animated notifications for better non-disturbing feedback.
-- **🔒 Security Hardened:** Bot tokens and sensitive data are strictly isolated.
-
-## 🛠️ Tech Stack
-
-- **Framework:** [React](https://reactjs.org/) with [Vite](https://vitejs.dev/)
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
-- **Icons:** [Lucide React](https://lucide.dev/)
-- **Typography:** [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk)
-- **API:** Telegram Bot API
-- **Build Tool:** TypeScript & Vite
-
-## 🚀 Installation
-
-### Development Mode
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/aybrkaknc/SwiftShift.git
-   cd SwiftShift
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Build the project:
-   ```bash
-   npm run build
-   ```
-4. Load in Chrome:
-   - Open Chrome and go to `chrome://extensions/`
-   - Enable **Developer mode** (top right)
-   - Click **Load unpacked** and select the `dist` folder.
-
-## ⚙️ Configuration
-
-1. Open the extension and follow the setup guide.
-2. Enter your **Telegram Bot Token** (get it from [@BotFather](https://t.me/BotFather)).
-3. Add your destinations (Channels, Groups, or Topics).
-4. Start shifting content!
-
-## 📜 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Now officially supports both **Google Chrome** and **Mozilla Firefox**.
 
 ---
 
-Built with ❤️ for a faster web-to-Telegram experience.
+## ✨ Features (English)
+
+- **Dual-Browser Support:** Native builds for Chrome (Manifest V3) and Firefox (Manifest V3).
+- **Hierarchical Destinations:** Organize forum topics under their parent channels/groups.
+- **Modern UI:** A clean, high-end interface built with Tailwind CSS and premium typography.
+- **Page & Region Capture:** Capture the full visible area or a specific mouse-selected region as PNG.
+- **Smart Location Detection:** Automatically detects Google Maps coordinates and sends them as Telegram locations.
+- **Secure Handling:** Bot tokens and configurations are stored locally and never logged.
+- **Premium Animations:** Smooth slide-in/out transitions for notifications and modals.
+
+## 🛠️ Installation & Build
+
+### 1. Requirements
+- Node.js (v18+)
+- npm
+
+### 2. Setup
+```bash
+git clone https://github.com/aybrkaknc/SwiftShift.git
+cd SwiftShift
+npm install
+```
+
+### 3. Build for Browsers
+- **For Chrome:** `npm run build:chrome` (Output: `dist/chrome`)
+- **For Firefox:** `npm run build:firefox` (Output: `dist/firefox`)
+- **Both:** `npm run build:all`
+
+### 4. Loading the Extension
+- **Chrome:** Go to `chrome://extensions/`, enable Developer Mode, click "Load unpacked", and select `dist/chrome`.
+- **Firefox:** Go to `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on...", and select `dist/firefox/manifest.json`.
+
+---
+
+# SwiftShift 🚀 (Türkçe)
+
+SwiftShift, web içeriklerini anında Telegram'a köprülemek için tasarlanmış yüksek performanslı bir tarayıcı eklentisidir. Modern arayüzü ve hiyerarşik hedef yönetimi ile bağlantıları, seçimleri, ekran görüntülerini ve konumları kanallarınıza, gruplarınıza veya forum konularınıza sorunsuz bir şekilde paylaşmanızı sağlar.
+
+Artık resmi olarak hem **Google Chrome** hem de **Mozilla Firefox**'u desteklemektedir.
+
+## ✨ Özellikler (Türkçe)
+
+- **Çift Tarayıcı Desteği:** Chrome (Manifest V3) ve Firefox (Manifest V3) için yerel yapılar.
+- **Hiyerarşik Hedefler:** Forum konularını ana kanallarının/gruplarının altında düzenleyin.
+- **Modern Arayüz:** Tailwind CSS ve premium tipografi ile oluşturulmuş temiz, üst düzey arayüz.
+- **Sayfa ve Bölge Yakalama:** Görünür alanı veya fare ile seçilen özel bir bölgeyi PNG olarak yakalayın.
+- **Akıllı Konum Algılama:** Google Haritalar koordinatlarını otomatik olarak algılar ve Telegram konumu olarak gönderir.
+- **Güvenli İşleme:** Bot token'ları ve konfigürasyonlar yerel olarak saklanır ve asla loglanmaz.
+- **Premium Animasyonlar:** Bildirimler ve modallar için pürüzsüz kayma geçişleri.
+
+## 🛠️ Kurulum ve Derleme
+- Bağımlılıkları yükleyin: `npm install`
+- Chrome için derleyin: `npm run build:chrome`
+- Firefox için derleyin: `npm run build:firefox`
+
+---
+
+## 📜 License
+This project is licensed under the MIT License.
+
+Built with ❤️ by [Ayberk](https://github.com/aybrkaknc) for a faster web-to-Telegram experience.

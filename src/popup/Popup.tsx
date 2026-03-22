@@ -4,6 +4,7 @@ import { StorageService, UserProfile, TelegramTarget } from '../services/storage
 import { DashboardView } from './views/DashboardView';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { TranslationProvider } from '../utils/TranslationContext';
+import { browser } from '../utils/browser-api';
 import '../styles/globals.css';
 
 /**
@@ -18,10 +19,7 @@ function Popup() {
     const [targets, setTargets] = useState<TelegramTarget[]>([]);
 
     useEffect(() => {
-        const init = async () => {
-            await loadProfile();
-        };
-        init();
+        loadProfile();
     }, []);
 
     // Load profile on start
@@ -53,7 +51,7 @@ function Popup() {
         await StorageService.updateProfileTargets(profile.id, updatedTargets);
         setTargets(updatedTargets);
         // Refresh context menu
-        chrome.runtime.sendMessage({ type: 'REFRESH_MENU' });
+        browser.runtime.sendMessage({ type: 'REFRESH_MENU' });
     };
 
     const handleAddManualTarget = async (newTarget: TelegramTarget) => {
@@ -83,7 +81,7 @@ function Popup() {
         const updatedTargets = [...targets, newTarget];
         await StorageService.updateProfileTargets(profile.id, updatedTargets);
         setTargets(updatedTargets);
-        chrome.runtime.sendMessage({ type: 'REFRESH_MENU' });
+        browser.runtime.sendMessage({ type: 'REFRESH_MENU' });
     };
 
     const handleRenameTarget = async (targetId: string, newName: string) => {
@@ -93,7 +91,7 @@ function Popup() {
         );
         await StorageService.updateProfileTargets(profile.id, updatedTargets);
         setTargets(updatedTargets);
-        chrome.runtime.sendMessage({ type: 'REFRESH_MENU' });
+        browser.runtime.sendMessage({ type: 'REFRESH_MENU' });
     };
 
     const handleTogglePin = async (targetId: string) => {
@@ -103,14 +101,14 @@ function Popup() {
         );
         await StorageService.updateProfileTargets(profile.id, updatedTargets);
         setTargets(updatedTargets);
-        chrome.runtime.sendMessage({ type: 'REFRESH_MENU' });
+        browser.runtime.sendMessage({ type: 'REFRESH_MENU' });
     };
 
     const handleLogout = async () => {
         await StorageService.clear();
         setProfile(null);
         setTargets([]);
-        chrome.runtime.sendMessage({ type: 'REFRESH_MENU' });
+        browser.runtime.sendMessage({ type: 'REFRESH_MENU' });
     };
 
     // --- RENDERING ---
@@ -128,13 +126,13 @@ function Popup() {
     // Profil yoksa kurulum ekranına yönlendirme butonu göster
     if (!profile) {
         const openWelcome = () => {
-            chrome.tabs.create({ url: chrome.runtime.getURL('welcome.html') });
+            browser.tabs.create({ url: browser.runtime.getURL('welcome.html') });
             window.close();
         };
 
         return (
             <TranslationProvider>
-                <div className="w-[400px] bg-background flex flex-col items-center justify-center p-8 gap-6">
+                <div className="w-[500px] bg-background flex flex-col items-center justify-center p-8 gap-6">
                     <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
                         <Zap className="text-primary fill-primary" size={28} />
                     </div>
@@ -157,7 +155,7 @@ function Popup() {
     return (
         <TranslationProvider>
             <ErrorBoundary>
-                <div className="w-[400px] h-[560px] bg-background">
+                <div className="w-[500px] h-[600px] bg-background">
                     <DashboardView
                         profile={profile}
                         targets={targets}

@@ -1,3 +1,5 @@
+import { browser } from '../utils/browser-api';
+
 /**
  * InjectToast Service
  * Aktif sekmeye in-page toast bildirimi enjekte eder.
@@ -16,7 +18,7 @@ export async function injectToast(
     type: 'success' | 'error' | 'info' = 'success'
 ): Promise<void> {
     try {
-        await chrome.scripting.executeScript({
+        await (browser.scripting as any).executeScript({
             target: { tabId },
             func: showToastInPage,
             args: [title, message, type]

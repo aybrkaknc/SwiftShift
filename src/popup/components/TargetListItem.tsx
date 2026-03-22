@@ -135,17 +135,17 @@ export const TargetListItem: React.FC<TargetListItemProps> = ({
                         </div>
                     ) : (
                         <>
-                            <p className={`text-[13px] font-bold transition-colors truncate flex items-center gap-1.5 ${isSelected ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>
+                            <p className={`text-[16px] font-bold transition-colors truncate flex items-center gap-2 ${isSelected ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>
                                 {target.name}
                             </p>
-                            <p className="text-[9px] font-bold text-muted/60 uppercase tracking-tighter truncate">{target.type}</p>
+                            <p className="text-[12px] font-bold text-muted/80 uppercase tracking-tighter truncate leading-none">{target.type}</p>
                         </>
                     )}
                 </div>
 
-                {/* Actions (Integrated Edge) */}
+                {/* Actions (Flex Flow - Smooth Push) */}
                 {!editingId && (
-                    <div className="absolute inset-y-0 right-0 flex items-center gap-1 px-3 action-bar-gradient opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 z-10">
+                    <div className="flex items-center gap-1 overflow-hidden transition-all duration-300 ease-in-out opacity-0 max-w-0 group-hover:max-w-[160px] flex-shrink-0 group-hover:opacity-100 group-hover:ml-2">
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -298,15 +298,15 @@ const ChildTopicItem: React.FC<ChildTopicItemProps> = ({
                         </button>
                     </div>
                 ) : (
-                    <span className={`text-xs font-medium block truncate ${isSelected ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>
+                    <span className={`text-[13px] font-semibold block truncate ${isSelected ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>
                         {child.name}
                     </span>
                 )}
             </div>
 
-            {/* Actions (Integrated Edge - Compact) */}
+            {/* Actions (Flex Flow - Compact) */}
             {!editingId && (
-                <div className="absolute inset-y-0 right-0 flex items-center gap-1.5 px-2.5 action-bar-gradient opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 z-10">
+                <div className="flex items-center gap-1.5 overflow-hidden transition-all duration-300 ease-in-out opacity-0 max-w-0 group-hover:max-w-[140px] flex-shrink-0 group-hover:opacity-100 group-hover:ml-2">
                     <button
                         onClick={(e) => {
                             e.stopPropagation();

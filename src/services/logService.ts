@@ -1,3 +1,5 @@
+import { browser } from '../utils/browser-api';
+
 /**
  * LogService
  * Uygulama logları ve hata kayıtlarını yönetir.
@@ -42,7 +44,7 @@ export const LogService = {
      * });
      */
     async add(entry: Omit<LogEntry, 'id' | 'timestamp'>): Promise<void> {
-        const { logs } = await chrome.storage.local.get('logs') as { logs: LogEntry[] };
+        const { logs } = await browser.storage.local.get('logs') as { logs: LogEntry[] };
         const currentLogs = logs || [];
 
         const newEntry: LogEntry = {
@@ -52,7 +54,7 @@ export const LogService = {
         };
 
         const updatedLogs = [newEntry, ...currentLogs].slice(0, this.MAX_LOGS);
-        await chrome.storage.local.set({ logs: updatedLogs });
+        await browser.storage.local.set({ logs: updatedLogs });
     },
 
     /**
@@ -60,7 +62,7 @@ export const LogService = {
      * @returns Timestamp'e göre sıralanmış log dizisi (en yeni ilk)
      */
     async getAll(): Promise<LogEntry[]> {
-        const { logs } = await chrome.storage.local.get('logs') as { logs: LogEntry[] };
+        const { logs } = await browser.storage.local.get('logs') as { logs: LogEntry[] };
         return logs || [];
     },
 
@@ -69,6 +71,6 @@ export const LogService = {
      * @returns Promise<void>
      */
     async clear(): Promise<void> {
-        await chrome.storage.local.set({ logs: [] });
+        await browser.storage.local.set({ logs: [] });
     }
 };

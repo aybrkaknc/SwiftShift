@@ -14,14 +14,15 @@ import { RecentsService, RecentSend } from '../../services/recents';
 import { RecentsView } from './RecentsView';
 import { LogService, LogEntry } from '../../services/logService';
 import { LogsView } from './LogsView';
-import { Search, Users, LogOut, RefreshCw, Plus } from 'lucide-react';
-import { ThemeToggle } from '../../components/ThemeToggle';
+import { Search, Users, LogOut, RefreshCw, Plus, Settings } from 'lucide-react';
 import { AddDestinationModal } from '../components/AddDestinationModal';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { TabBar, TabType } from '../components/TabBar';
 import { TargetSectionList } from '../components/TargetSectionList';
 import { ErrorService } from '../../services/errorService';
 import { useTranslation } from '../../utils/useTranslation';
+import { browser } from '../../utils/browser-api';
+import { SettingsModal } from '../components/SettingsModal';
 
 interface DashboardViewProps {
     profile: UserProfile;
@@ -44,7 +45,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     onRenameTarget,
     onTogglePin
 }) => {
-    const { t, locale, toggleLocale } = useTranslation();
+    const { t } = useTranslation();
 
     // === STATE ===
     const [selectedId, setSelectedId] = useState<string>('');
@@ -71,6 +72,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
     // Modal States
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [clearModal, setClearModal] = useState<{ open: boolean, type: 'recents' | 'logs' }>({ open: false, type: 'recents' });
 
     // Recents & Logs State
@@ -99,7 +101,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }, [activeTab]);
 
     useEffect(() => {
-        chrome.storage.local.get('recentTargets', (data) => {
+        browser.storage.local.get('recentTargets').then((data: any) => {
             const recent = data.recentTargets;
             if (recent && recent.length > 0 && targets.find(t2 => t2.id === recent[0])) {
                 setSelectedId(recent[0]);
@@ -176,7 +178,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         if (editingId) return;
         setSelectedId(id);
         await StorageService.addRecentTarget(id);
-        chrome.runtime.sendMessage({ type: 'REFRESH_MENU' });
+        browser.runtime.sendMessage({ type: 'REFRESH_MENU' });
     }, [editingId]);
 
     const startEditing = useCallback((target: TelegramTarget) => {
@@ -209,10 +211,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         setIsSending(true);
 
         try {
-            const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+            const [tab] = await browser.tabs.query({ active: true, lastFocusedWindow: true });
 
             if (!tab?.url) {
-                const [fallbackTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                const [fallbackTab] = await browser.tabs.query({ active: true, currentWindow: true });
                 if (!fallbackTab?.url) {
                     setIsSending(false);
                     return;
@@ -241,7 +243,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         message: "Please send a message to your bot first!",
                         type: 'error'
                     });
-                    chrome.tabs.create({ url: `https://t.me/${profile.username}` });
+                    browser.tabs.create({ url: `https://t.me/${profile.username}` });
                     setIsSending(false);
                     return;
                 }
@@ -319,7 +321,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         message: "Please send a message to your bot first!",
                         type: 'error'
                     });
-                    chrome.tabs.create({ url: `https://t.me/${profile.username}` });
+                    browser.tabs.create({ url: `https://t.me/${profile.username}` });
                     setIsSending(false);
                     return;
                 }
@@ -469,30 +471,56 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         setIsAddModalOpen(false);
     }, [profile.botToken, onAddTarget, t]);
 
+    const handleExportData = useCallback(() => {
+        if (!profile) return;
+        
+        try {
+            // Popup state'inde profile'ın targetları stale (eski) kalabildiğinden doğrudan ekrandaki aktif targets objesini alarak paketliyoruz!
+            const profileToExport = { ...profile, targets: targets };
+            const dataStr = JSON.stringify(profileToExport, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+            const exportFileDefaultName = `swiftshift_backup_${profile.username || 'data'}.json`;
+
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            setStatus({ message: t.settings.exportSuccess, type: 'success' });
+        } catch (error) {
+            console.error('Export error:', error);
+            setStatus({ message: t.dashboard.unknownError, type: 'error' });
+        }
+    }, [profile, targets, t]);
+
+    const handleImportData = useCallback(async (contentStr: string) => {
+        try {
+            const parsedData = JSON.parse(contentStr) as UserProfile;
+            
+            if (!parsedData || !parsedData.id || !parsedData.botToken || !Array.isArray(parsedData.targets)) {
+                throw new Error('Invalid format: Missing required fields.');
+            }
+
+            // Gelen datada hata yoksa doğrudan profili ez ve listeyi sıfırdan kur.
+            await StorageService.saveProfile(parsedData);
+            onRefresh(); // Bu popup'taki fetch işini tetikler
+            
+            setStatus({ message: t.settings.importSuccess, type: 'success' });
+            setIsSettingsOpen(false);
+        } catch (err: any) {
+            setStatus({ message: t.settings.importFailed + ' (' + err.message + ')', type: 'error' });
+        }
+    }, [onRefresh, t]);
+
     // === RENDER ===
     return (
         <div className="flex-1 flex flex-col h-full bg-background text-white overflow-hidden relative">
 
             {/* Header */}
             <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 border-b border-white/5 bg-background/95 backdrop-blur-sm">
-                <div className="flex items-center gap-2.5">
-                    <img src="icons/icon128.png" className="w-7 h-7 object-contain" alt="SwiftShift Logo" />
-                    <div className="flex flex-col">
-                        <h1 className="text-base font-bold tracking-tight leading-tight">SwiftShift</h1>
-                    </div>
-                </div>
+                <h1 className="text-base font-bold tracking-tight leading-tight">SwiftShift</h1>
 
                 <div className="flex items-center gap-1">
-                    <ThemeToggle />
-                    {activeTab === 'channels' && (
-                        <button
-                            onClick={() => setIsAddModalOpen(true)}
-                            className="flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-white hover:bg-white/10 transition-all"
-                            title={t.dashboard.addChat}
-                        >
-                            <Plus size={18} />
-                        </button>
-                    )}
                     <button
                         onClick={handleManualRefresh}
                         className="flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-primary hover:bg-primary/10 transition-all"
@@ -501,18 +529,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
                     </button>
                     <button
-                        onClick={toggleLocale}
-                        className="flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-white hover:bg-white/10 transition-all text-[10px] font-black tracking-wide"
-                        title={locale === 'en' ? 'Switch to Turkish' : 'İngilizceye Geç'}
+                        onClick={() => setIsSettingsOpen(true)}
+                        className="flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-white hover:bg-white/10 transition-all"
+                        title={t.settings.title}
                     >
-                        {locale.toUpperCase()}
+                        <Settings size={18} />
                     </button>
                     <button
                         onClick={onLogout}
                         className="flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-danger hover:bg-danger/10 transition-all"
                         title={t.dashboard.logout}
                     >
-                        <LogOut size={18} className="-translate-x-[1px]" />
+                        <LogOut size={18} />
                     </button>
                 </div>
             </header>
@@ -520,10 +548,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {/* Status Toast */}
             {status && (
                 <div className={`
-                    absolute bottom-0 left-0 right-0 z-50 px-4 py-2 
+                    absolute bottom-0 left-0 right-0 z-[100] px-4 py-3
                     ${isToastExiting ? 'toast-animate-out-bottom' : 'toast-animate-in-bottom'}
                     ${status.type === 'success' ? 'bg-primary/20 text-primary border-t border-primary/20' : 'bg-danger/20 text-danger border-t border-danger/20'}
-                    backdrop-blur-md text-[11px] font-bold text-center shadow-lg
+                    backdrop-blur-md text-[13px] font-bold text-center shadow-lg tracking-wide
                 `}>
                     {status.message}
                 </div>
@@ -537,7 +565,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         <Search size={16} className="text-muted group-focus-within:text-primary transition-colors" />
                     </div>
                     <input
-                        className="block w-full pl-10 pr-36 py-2 border border-white/5 rounded-xl bg-surface/40 text-sm text-white placeholder-muted/50 focus:ring-1 focus:ring-primary focus:border-primary/40 focus:bg-surface/60 transition-all outline-none"
+                        className="block w-full pl-11 pr-40 py-3 border border-white/5 rounded-xl bg-surface/40 text-[16px] font-medium text-white placeholder-muted/50 focus:ring-1 focus:ring-primary focus:border-primary/40 focus:bg-surface/60 transition-all outline-none"
                         placeholder={t.dashboard.searchPlaceholder}
                         type="text"
                         value={filter}
@@ -552,9 +580,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         className="absolute inset-y-0 right-2 flex items-center cursor-pointer group/bot"
                         title="View Bot on Telegram"
                     >
-                        <div className="flex items-center gap-2 px-3 py-0.5 rounded-lg bg-white/[0.03] border border-white/5 group-hover/bot:bg-primary/10 group-hover/bot:border-primary/20 transition-all">
-                            <div className="w-1 h-1 rounded-full bg-primary/40 group-hover/bot:bg-primary transition-colors"></div>
-                            <span className="text-[9px] font-bold text-muted/40 group-hover/bot:text-primary transition-colors uppercase tracking-wider">
+                        <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/5 group-hover/bot:bg-primary/10 group-hover/bot:border-primary/20 transition-all">
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary/40 group-hover/bot:bg-primary transition-colors"></div>
+                            <span className="text-[12px] font-bold text-muted/60 group-hover/bot:text-primary transition-colors uppercase tracking-widest">
                                 @{profile.username || profile.name}
                             </span>
                         </div>
@@ -569,11 +597,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {activeTab === 'channels' ? (
                 <div className={`flex-1 overflow-y-auto px-4 pb-6 no-scrollbar ${filteredTargets.length === 0 ? 'flex flex-col items-center justify-center' : ''}`}>
                     {filteredTargets.length === 0 ? (
-                        <div className="text-center py-10 px-6 flex flex-col items-center gap-4 bg-surface/20 rounded-2xl border border-white/5 w-full">
-                            <Users size={20} className="text-muted" />
-                            <div className="space-y-1">
-                                <p className="text-xs font-bold">{t.dashboard.noDestinations}</p>
-                                <p className="text-[9px] text-muted leading-tight">{t.dashboard.noDestinationsHint}</p>
+                        <div className="text-center py-12 px-6 flex flex-col items-center gap-4 w-full opacity-60">
+                            <Users size={24} className="text-muted" strokeWidth={1.5} />
+                            <div className="space-y-1.5 text-center">
+                                <p className="text-[15px] font-bold tracking-tight">{t.dashboard.noDestinations}</p>
+                                <p className="text-[12px] text-muted leading-relaxed max-w-[260px] mx-auto">{t.dashboard.noDestinationsHint}</p>
                             </div>
                         </div>
                     ) : (
@@ -662,6 +690,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     onClear={() => setClearModal({ open: true, type: 'logs' })}
                 />
             )}
+
+            {/* Floating Action Button (FAB) for Add Chat */}
+            {activeTab === 'channels' && (
+                <button
+                    onClick={() => setIsAddModalOpen(true)}
+                    className={`absolute bottom-6 right-6 w-12 h-12 rounded-2xl bg-primary text-background flex items-center justify-center shadow-[0_0_15px_rgba(244,171,37,0.4)] hover:shadow-[0_0_20px_rgba(244,171,37,0.6)] hover:scale-[1.05] hover:bg-primary-hover transition-all z-20 group ${
+                        status && !isToastExiting ? '-translate-y-10' : 'translate-y-0'
+                    }`}
+                    title={t.dashboard.addChat}
+                >
+                    <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300 fill-background" strokeWidth={2.5} />
+                </button>
+            )}
+
+            {/* Settings Modal */}
+            <SettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                onExport={handleExportData}
+                onImport={handleImportData}
+            />
 
             {/* Add Destination Modal */}
             <AddDestinationModal

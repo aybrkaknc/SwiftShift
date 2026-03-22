@@ -4,6 +4,7 @@
  * i18n: getTranslations() ile çeviri desteği.
  */
 
+import { browser } from '../../utils/browser-api';
 import { StorageService } from '../storage';
 import { TelegramService } from '../telegram';
 import { RecentsService } from '../recents';
@@ -19,7 +20,7 @@ import { injectToast } from '../injectToast';
  */
 export async function handleCaptureAndSend(
     targetId: string,
-    tab: chrome.tabs.Tab,
+    tab: any,
     captureMode: 'photo' | 'file' | 'region' = 'file'
 ): Promise<void> {
     const t = getTranslations();
@@ -36,11 +37,12 @@ export async function handleCaptureAndSend(
     // Region mode: Content script'e seçim UI'ını başlatması için mesaj gönder
     if (captureMode === 'region' && tab.id) {
         try {
-            chrome.tabs.sendMessage(tab.id, {
+            await browser.tabs.sendMessage(tab.id, {
                 type: 'START_REGION_CAPTURE',
                 targetId,
                 threadId: target?.threadId,
-                targetName: target?.name
+                targetName: target?.name,
+                regionInstruction: t.capture.regionInstruction
             });
         } catch (e) {
             await injectToast(tab.id, 'Region Capture Error', t.capture.regionUnavailable, 'error');
@@ -50,7 +52,7 @@ export async function handleCaptureAndSend(
 
     try {
         // Görünür alanı PNG olarak yakala
-        const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+        const dataUrl = await browser.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
 
         // Data URL'i Blob'a çevir
         const response = await fetch(dataUrl);

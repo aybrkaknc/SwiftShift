@@ -3,7 +3,7 @@
  * Global test yapılandırması ve Chrome API mock'ları.
  */
 
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
 
 // Chrome API Mock

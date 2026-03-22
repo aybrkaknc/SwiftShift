@@ -4,4 +4,6 @@ dist
 .DS_Store
 *.local
 .gemini
-
+.agent
+releases
+build_err.txt

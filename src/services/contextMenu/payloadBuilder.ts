@@ -23,8 +23,8 @@ export interface TelegramPayloadData {
  * @returns Telegram payload'ı veya null
  */
 export async function buildPayload(
-    info: chrome.contextMenus.OnClickData,
-    tab?: chrome.tabs.Tab,
+    info: any,
+    tab?: any,
     priorityType?: string,
     sendAsFile?: boolean
 ): Promise<TelegramPayloadData | null> {

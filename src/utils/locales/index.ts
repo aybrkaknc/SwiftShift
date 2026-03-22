@@ -8,7 +8,6 @@ export const en = {
 
     // === WELCOME FLOW ===
     welcome: {
-        betaBadge: "v0.6.0 Beta",
         title: "SwiftShift",
         subtitle: "Zero-friction content transfer to Telegram.\nConnect your bot, select destinations, and start shifting.",
         getStarted: "Get Started",
@@ -34,7 +33,7 @@ export const en = {
             description: "SwiftShift needs to know where to send messages. The easiest way is using Telegram Web.",
             recommended: "Recommended Method",
             recTitle: "Add via Telegram Web",
-            recDesc: "Right-click on your chat in Telegram Web and select Add to SwiftShift.",
+            recDesc: "Right-click on your chat in Telegram Web and select Add to SwiftShift.\n\n⚠️ IMPORTANT: Make sure you are using the 'Telegram Web A' version.",
             openWeb: "Open Telegram Web",
             alternative: "Alternative",
             altTitle: "Manual Add",
@@ -248,7 +247,8 @@ export const en = {
         sentToUncompressed: "Sent to {name} (Uncompressed)",
         captureError: "Capture Error",
         captureErrorMsg: "Cannot capture this page. Does not work on chrome:// or restricted pages.",
-        captureFailedLog: "Page capture failed"
+        captureFailedLog: "Page capture failed",
+        regionInstruction: "\u2702\ufe0f Select the area you want to capture (ESC to cancel)"
     },
 
     // === DESTINATION HANDLER ===
@@ -260,7 +260,9 @@ export const en = {
         cannotDetectChatId: "Could not detect Chat ID from URL.",
         alreadyExists: "Already Exists",
         alreadyExistsMsg: "This chat is already in your destinations.",
-        addedToSwiftShift: "Added to SwiftShift!"
+        addedToSwiftShift: "Added to SwiftShift!",
+        wrongWebVersion: "Version Warning",
+        wrongWebVersionMsg: "Please switch to 'Telegram Web A' to use the extension."
     },
 
     // === TELEGRAM ERRORS ===
@@ -272,6 +274,24 @@ export const en = {
         blocked: "Bot was blocked or lacks permissions.",
         rateLimit: "Rate limited. Please wait and try again.",
         unknown: "An unknown error occurred."
+    },
+
+    // === SETTINGS ===
+    settings: {
+        title: "Settings",
+        language: "LANGUAGE",
+        dataManagement: "EXPORT / IMPORT",
+        exportData: "Export", // Kısa buton metni
+        importData: "Import", // Kısa buton metni
+        dataManagementDesc: "Backup your data or move it to another device.",
+        importDataPlaceholder: "Paste your JSON backup here...",
+        importSubmit: "Upload",
+        exportSuccess: "Backup exported successfully.",
+        importSuccess: "Backup imported successfully.",
+        importFailed: "Failed to import backup. Invalid format.",
+        importWarning: "Importing a backup will overwrite your current destinations. Proceed?",
+        close: "Close",
+        ok: "OK"
     }
 };
 
@@ -280,7 +300,6 @@ export const tr = {
 
     // === WELCOME FLOW ===
     welcome: {
-        betaBadge: "v0.6.0 Beta",
         title: "SwiftShift",
         subtitle: "Telegram'a içerik göndermenin en akıcı yolu.\nBotunuzu bağlayın, hedeflerinizi seçin ve paylaşmaya başlayın.",
         getStarted: "Başlayalım",
@@ -306,7 +325,7 @@ export const tr = {
             description: "SwiftShift nereye mesaj atacağını bilmeli. En kolay yol Telegram Web kullanmaktır.",
             recommended: "Önerilen Yöntem",
             recTitle: "Telegram Web ile Ekle",
-            recDesc: "Web üzerinde kanalınıza Sağ Tıklayın ve Add to SwiftShift seçeneğini seçin.",
+            recDesc: "Web üzerinde kanalınıza Sağ Tıklayın ve Add to SwiftShift seçeneğini seçin.\n\n⚠️ ÖNEMLİ: Lütfen 'Telegram Web A' sürümünü kullandığınızdan emin olun.",
             openWeb: "Telegram Web'i Aç",
             alternative: "Alternatif",
             altTitle: "Manuel Ekleme",
@@ -520,19 +539,23 @@ export const tr = {
         sentToUncompressed: "{name} hedefine g\u00f6nderildi (Orijinal)",
         captureError: "Yakalama Hatas\u0131",
         captureErrorMsg: "Sayfa yakalanamad\u0131. Chrome:// veya k\u0131s\u0131tl\u0131 sayfalarda \u00e7al\u0131\u015fmaz.",
-        captureFailedLog: "Sayfa yakalama ba\u015far\u0131s\u0131z"
+        captureFailedLog: "Sayfa yakalama ba\u015far\u0131s\u0131z",
+        regionInstruction: "\u2702\ufe0f Yakalamak istedi\u011finiz alan\u0131 se\u00e7in (ESC ile iptal)"
     },
 
     // === DESTINATION HANDLER ===
     destination: {
         error: "Hata",
-        cannotDetectPage: "Mevcut sayfa alg\u0131lanamad\u0131.",
+        cannotDetectPage: "Mevcut sayfa algılandıktan sonra hata oluştu.",
+        cannotDetectPageFallback: "Mevcut sayfa algılanamadı.",
         setupRequired: "Kurulum Gerekli",
-        setupRequiredMsg: "L\u00fctfen \u00f6nce botunuzu ba\u011flay\u0131n.",
-        cannotDetectChatId: "URL'den Chat ID alg\u0131lanamad\u0131.",
+        setupRequiredMsg: "Lütfen önce botunuzu bağlayın.",
+        cannotDetectChatId: "URL'den Chat ID algılanamadı.",
         alreadyExists: "Zaten Mevcut",
         alreadyExistsMsg: "Bu sohbet zaten hedeflerinizde.",
-        addedToSwiftShift: "SwiftShift'e Eklendi!"
+        addedToSwiftShift: "SwiftShift'e Eklendi!",
+        wrongWebVersion: "Sürüm Uyarısı",
+        wrongWebVersionMsg: "Eklentiyi kullanabilmek için lütfen 'Telegram Web A' sürümüne geçiniz."
     },
 
     // === TELEGRAM ERRORS ===
@@ -544,5 +567,23 @@ export const tr = {
         blocked: "Bot engellendi veya yetkisi yok.",
         rateLimit: "H\u0131z s\u0131n\u0131r\u0131 a\u015f\u0131ld\u0131. L\u00fctfen bekleyip tekrar deneyin.",
         unknown: "Bilinmeyen bir hata olu\u015ftu."
+    },
+
+    // === SETTINGS ===
+    settings: {
+        title: "Ayarlar",
+        language: "DİL",
+        dataManagement: "EXPORT / IMPORT",
+        exportData: "Dışa Aktar",
+        importData: "İçe Aktar",
+        dataManagementDesc: "Verilerinizi yedeklemek veya başka cihaza taşımak için.",
+        importDataPlaceholder: "JSON yedeğinizi buraya yapıştırın...",
+        importSubmit: "Yükle",
+        exportSuccess: "Yedek başarıyla dışa aktarıldı.",
+        importSuccess: "Yedek başarıyla içe aktarıldı.",
+        importFailed: "Yedek içe aktarılamadı. Geçersiz format.",
+        importWarning: "İçe aktarılan yedek, mevcut hedeflerinizin üzerine yazılacaktır. Devam edilsin mi?",
+        close: "Kapat",
+        ok: "Tamam"
     }
 };

@@ -1,3 +1,5 @@
+import { browser } from '../utils/browser-api';
+
 export interface TelegramTarget {
     id: string; // Chat ID or Topic ID
     name: string;
@@ -27,9 +29,35 @@ export interface StorageSchema {
 
 /**
  * StorageService
- * Wrapper around chrome.storage.local for SwiftShift.
+ * Wrapper around browser.storage.local for SwiftShift.
  * Handles Profile management and secure token storage.
  */
+
+// Basit Token Obfuscation Yardımcıları (Güvenliği artırmak için)
+const OBFUSCATE_PREFIX = "ENC_";
+
+function obfuscateToken(token: string): string {
+    if (token.startsWith(OBFUSCATE_PREFIX)) return token; // Zaten şifreli
+    try {
+        // Basit ters çevirme ve Base64 - eklentinin sandbox dışından sadece düz okunmasını zorlaştırır.
+        const reversed = token.split('').reverse().join('');
+        return OBFUSCATE_PREFIX + btoa(reversed);
+    } catch {
+        return token;
+    }
+}
+
+function deobfuscateToken(token: string): string {
+    if (!token.startsWith(OBFUSCATE_PREFIX)) return token; // Şifreli değilse düz döndür (Geri dönüklük/Legacy)
+    try {
+        const base64Str = token.replace(OBFUSCATE_PREFIX, '');
+        const reversed = atob(base64Str);
+        return reversed.split('').reverse().join('');
+    } catch {
+        return token;
+    }
+}
+
 export const StorageService = {
     /**
      * Initialize storage with default values if empty
@@ -38,9 +66,9 @@ export const StorageService = {
         // Attempt Migration FIRST if applicable
         await this.migrateFromLegacy();
 
-        const data = await chrome.storage.local.get(['profiles', 'activeProfileId', 'recentTargets']);
+        const data = await browser.storage.local.get(['profiles', 'activeProfileId', 'recentTargets']);
         if (!data.profiles) {
-            await chrome.storage.local.set({
+            await browser.storage.local.set({
                 profiles: {},
                 activeProfileId: '',
                 recentTargets: [],
@@ -52,7 +80,7 @@ export const StorageService = {
      * Migrate from v3 (flat structure) to v4 (profile-based)
      */
     async migrateFromLegacy(): Promise<void> {
-        const legacy = await chrome.storage.local.get(['botToken', 'chatId', 'targets', 'displayName', 'profiles']);
+        const legacy: any = await browser.storage.local.get(['botToken', 'chatId', 'targets', 'displayName', 'profiles']);
 
         // Check if legacy data exists and NO profiles exist yet
         if (legacy.botToken && !legacy.profiles) {
@@ -60,20 +88,20 @@ export const StorageService = {
                 id: legacy.chatId || 'legacy-default',
                 name: 'Migrated Bot',
                 displayName: legacy.displayName || 'Legacy User',
-                botToken: legacy.botToken,
+                botToken: obfuscateToken(legacy.botToken),
                 chatId: legacy.chatId || '',
                 targets: legacy.targets || [],
                 lastSynced: Date.now()
             };
 
-            await chrome.storage.local.set({
+            await browser.storage.local.set({
                 profiles: { [legacyProfile.id]: legacyProfile },
                 activeProfileId: legacyProfile.id,
                 recentTargets: legacy.targets ? legacy.targets.map((t: any) => t.id).slice(0, 3) : []
             });
 
             // Cleanup legacy keys
-            await chrome.storage.local.remove(['botToken', 'chatId', 'targets', 'displayName']);
+            await browser.storage.local.remove(['botToken', 'chatId', 'targets', 'displayName']);
         }
     },
 
@@ -81,14 +109,15 @@ export const StorageService = {
      * Save a new profile or update existing one
      */
     async saveProfile(profile: UserProfile): Promise<void> {
-        const { profiles } = await chrome.storage.local.get('profiles');
-        const updatedProfiles = { ...profiles, [profile.id]: profile };
+        const profileToSave = { ...profile, botToken: obfuscateToken(profile.botToken) };
+        const { profiles }: any = await browser.storage.local.get('profiles');
+        const updatedProfiles = { ...profiles, [profileToSave.id]: profileToSave };
 
         // If this is the first profile, set it as active
-        const { activeProfileId } = await chrome.storage.local.get('activeProfileId');
+        const { activeProfileId }: any = await browser.storage.local.get('activeProfileId');
         const newActiveId = activeProfileId || profile.id;
 
-        await chrome.storage.local.set({
+        await browser.storage.local.set({
             profiles: updatedProfiles,
             activeProfileId: newActiveId,
         });
@@ -98,26 +127,38 @@ export const StorageService = {
      * Get the currently active profile
      */
     async getActiveProfile(): Promise<UserProfile | null> {
-        const { activeProfileId, profiles } = await chrome.storage.local.get(['activeProfileId', 'profiles']);
+        const { activeProfileId, profiles }: any = await browser.storage.local.get(['activeProfileId', 'profiles']);
         if (!activeProfileId || !profiles) return null;
-        return profiles[activeProfileId] || null;
+        let profile = (profiles as any)[activeProfileId];
+        if (!profile) return null;
+
+        // Okurken token'ı çöz
+        return {
+            ...profile,
+            botToken: deobfuscateToken(profile.botToken)
+        } as UserProfile;
     },
 
     /**
      * Get all profiles
      */
     async getAllProfiles(): Promise<UserProfile[]> {
-        const { profiles } = await chrome.storage.local.get('profiles');
-        return profiles ? Object.values(profiles) : [];
+        const { profiles }: any = await browser.storage.local.get('profiles');
+        if (!profiles) return [];
+        
+        return Object.values(profiles).map((p: any) => ({
+            ...p,
+            botToken: deobfuscateToken(p.botToken)
+        })) as UserProfile[];
     },
 
     /**
      * Switch active profile
      */
     async setActiveProfile(profileId: string): Promise<void> {
-        const { profiles } = await chrome.storage.local.get('profiles');
-        if (profiles && profiles[profileId]) {
-            await chrome.storage.local.set({ activeProfileId: profileId });
+        const { profiles }: any = await browser.storage.local.get('profiles');
+        if (profiles && (profiles as any)[profileId]) {
+            await browser.storage.local.set({ activeProfileId: profileId });
         }
     },
 
@@ -125,11 +166,11 @@ export const StorageService = {
      * Update cached targets for a profile
      */
     async updateProfileTargets(profileId: string, targets: TelegramTarget[]): Promise<void> {
-        const { profiles } = await chrome.storage.local.get('profiles');
-        if (profiles && profiles[profileId]) {
-            profiles[profileId].targets = targets;
-            profiles[profileId].lastSynced = Date.now();
-            await chrome.storage.local.set({ profiles });
+        const { profiles }: any = await browser.storage.local.get('profiles');
+        if (profiles && (profiles as any)[profileId]) {
+            (profiles as any)[profileId].targets = targets;
+            (profiles as any)[profileId].lastSynced = Date.now();
+            await browser.storage.local.set({ profiles });
         }
     },
 
@@ -137,7 +178,7 @@ export const StorageService = {
      * Add a target to the recent list (Top 3 logic)
      */
     async addRecentTarget(targetId: string): Promise<void> {
-        const { recentTargets } = await chrome.storage.local.get('recentTargets') as { recentTargets: string[] };
+        const { recentTargets }: any = await browser.storage.local.get('recentTargets');
         let newRecents = [targetId, ...(recentTargets || [])];
 
         // Remove duplicates
@@ -148,21 +189,21 @@ export const StorageService = {
             newRecents = newRecents.slice(0, 10);
         }
 
-        await chrome.storage.local.set({ recentTargets: newRecents });
+        await browser.storage.local.set({ recentTargets: newRecents });
     },
 
     /**
      * Clear all data (Debug/Reset)
      */
     async clear(): Promise<void> {
-        await chrome.storage.local.clear();
+        await browser.storage.local.clear();
     },
 
     /**
      * Get Recents view mode preference
      */
     async getViewMode(): Promise<'compact' | 'bento' | 'gallery'> {
-        const { viewMode } = await chrome.storage.local.get('viewMode');
+        const { viewMode }: any = await browser.storage.local.get('viewMode');
         return viewMode || 'bento'; // Default to bento
     },
 
@@ -170,21 +211,6 @@ export const StorageService = {
      * Set Recents view mode preference
      */
     async setViewMode(mode: 'compact' | 'bento' | 'gallery'): Promise<void> {
-        await chrome.storage.local.set({ viewMode: mode });
-    },
-
-    /**
-     * Tema tercihini al
-     */
-    async getTheme(): Promise<'light' | 'dark'> {
-        const { theme } = await chrome.storage.local.get('theme');
-        return theme || 'dark'; // Default to dark
-    },
-
-    /**
-     * Tema tercihini kaydet
-     */
-    async setTheme(theme: 'light' | 'dark'): Promise<void> {
-        await chrome.storage.local.set({ theme });
+        await browser.storage.local.set({ viewMode: mode });
     }
 };

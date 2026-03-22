@@ -23,7 +23,7 @@ export default {
                 danger: '#EF4444',
             },
             fontFamily: {
-                sans: ['"Space Grotesk"', 'sans-serif'],
+                sans: ['"Inter Display"', '"Inter"', 'sans-serif'],
             },
             boxShadow: {
                 'glow': '0 0 15px -3px rgba(244, 171, 37, 0.3)',
@@ -31,6 +31,7 @@ export default {
             animation: {
                 'fade-in': 'fadeIn 0.2s ease-in-out',
                 'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                'slide-up-fade': 'slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
                 'spring-in': 'springSlideIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
                 'progress': 'progressShrink 4000ms linear forwards',
             },
@@ -41,6 +42,10 @@ export default {
                 },
                 slideUp: {
                     '0%': { transform: 'translateY(10px)', opacity: '0' },
+                    '100%': { transform: 'translateY(0)', opacity: '1' },
+                },
+                slideUpFade: {
+                    '0%': { transform: 'translateY(30px)', opacity: '0' },
                     '100%': { transform: 'translateY(0)', opacity: '1' },
                 },
                 springSlideIn: {

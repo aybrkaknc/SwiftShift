@@ -1,15 +1,16 @@
 import { SelectionHandler } from '../services/handlers/selectionHandler';
 import { MediaHandler } from '../services/handlers/mediaHandler';
+import { browser } from '../utils/browser-api';
 
 // Listen for Capture Command
-chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+(browser.runtime.onMessage as any).addListener((msg: any, _sender: any, sendResponse: any) => {
     if (msg.type === 'CAPTURE_CONTENT') {
         processCapture().then(payload => sendResponse(payload));
         return true;
     }
 
     if (msg.type === 'START_REGION_CAPTURE') {
-        startRegionCapture(msg.targetId, msg.threadId, msg.targetName);
+        startRegionCapture(msg.targetId, msg.threadId, msg.targetName, msg.regionInstruction);
         sendResponse({ success: true });
         return true;
     }
@@ -43,7 +44,7 @@ async function processCapture() {
 /**
  * Region Capture: Kullanıcının bir dikdörtgen seçmesini sağlar
  */
-function startRegionCapture(targetId: string, threadId?: number, targetName?: string) {
+function startRegionCapture(targetId: string, threadId?: number, targetName?: string, regionInstruction?: string) {
     // Mevcut overlay varsa kaldır
     const existingOverlay = document.getElementById('swiftshift-region-overlay');
     if (existingOverlay) existingOverlay.remove();
@@ -89,7 +90,7 @@ function startRegionCapture(targetId: string, threadId?: number, targetName?: st
         box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         border: 1px solid rgba(255,255,255,0.1);
     `;
-    instruction.textContent = '✂️ Yakalamak istediğiniz alanı seçin (ESC ile iptal)';
+    instruction.textContent = regionInstruction || '✂️ Select the area you want to capture (ESC to cancel)';
     overlay.appendChild(instruction);
 
     let startX = 0, startY = 0;
@@ -143,7 +144,7 @@ function startRegionCapture(targetId: string, threadId?: number, targetName?: st
         }
 
         // Background'a seçim bilgilerini gönder
-        chrome.runtime.sendMessage({
+        browser.runtime.sendMessage({
             type: 'REGION_CAPTURE_SELECTED',
             targetId,
             threadId,
@@ -178,7 +179,7 @@ document.addEventListener('contextmenu', (e) => {
     lastContextMenuCoords = { x: e.clientX, y: e.clientY };
 }, true);
 
-chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+(browser.runtime.onMessage as any).addListener((msg: any, _sender: any, sendResponse: any) => {
     if (msg.type === 'GET_CLICKED_MEDIA') {
         const media = scanForMedia(lastContextMenuCoords.x, lastContextMenuCoords.y);
         sendResponse(media || null);
@@ -251,11 +252,16 @@ function scanForMedia(x: number, y: number) {
 
         // 4. SVG
         if (el instanceof SVGElement) {
-            // SVG'yi base64'e çevir
             try {
-                new XMLSerializer().serializeToString(el);
-                // SVG'yi direk işlemek yerine, burada basitçe varlığını kontrol ediyoruz.
-                // İdeal çözüm: SVG'yi canvas'a render etmek. Şimdilik bu kısmı atlıyoruz çünkü karmaşık.
+                const svgData = new XMLSerializer().serializeToString(el);
+                // Base64 SVG URI
+                const encodedSvg = btoa(unescape(encodeURIComponent(svgData)));
+                const dataUrl = `data:image/svg+xml;base64,${encodedSvg}`;
+                candidates.push({
+                    type: 'image', // Telegram backend should attempt reading document/png.
+                    src: dataUrl,
+                    score: 8 + (area / 10000)
+                });
             } catch (e) { }
         }
 
@@ -280,7 +286,7 @@ function scanForMedia(x: number, y: number) {
     if (candidates.length > 0) {
         // Puana göre sırala (Azalan)
         candidates.sort((a, b) => b.score - a.score);
-        console.log('Media Candidates:', candidates); // Debug için
+
         return candidates[0];
     }
 

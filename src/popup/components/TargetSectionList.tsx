@@ -72,7 +72,7 @@ export const TargetSectionList: React.FC<TargetSectionListProps> = React.memo(({
                     <ChevronRight size={12} />
                 </div>
 
-                <span className="text-[10px] font-bold text-muted uppercase tracking-widest group-hover/section:text-white transition-colors">{title}</span>
+                <span className="text-[12px] font-bold text-muted uppercase tracking-widest group-hover/section:text-white transition-colors">{title}</span>
             </div>
 
             {/* Animated Content Wrapper */}

@@ -7,6 +7,7 @@
 
 import { LogService } from './logService';
 import { getTranslations } from '../utils/i18nUtils';
+import { browser } from '../utils/browser-api';
 
 /**
  * Uygulama hatası için özel sınıf
@@ -127,7 +128,7 @@ export const ErrorService = {
      * @param message - Bildirim mesajı
      */
     notify(title: string, message: string): void {
-        chrome.notifications.create({
+        browser.notifications.create({
             type: 'basic',
             iconUrl: 'icons/icon128.png',
             title,

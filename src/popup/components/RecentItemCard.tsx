@@ -51,8 +51,8 @@ export const RecentItemCard: React.FC<RecentItemCardProps> = ({
             {isCompact ? (
                 <>
                     {getIcon(item.type)}
-                    <span className="flex-1 text-xs text-white truncate">{item.preview || item.content}</span>
-                    <span className="text-[9px] text-muted">{formatTime(item.timestamp)}</span>
+                    <span className="flex-1 text-[13px] text-white truncate">{item.preview || item.content}</span>
+                    <span className="text-[11px] text-muted">{formatTime(item.timestamp)}</span>
                 </>
             ) : (
                 <>
@@ -60,9 +60,9 @@ export const RecentItemCard: React.FC<RecentItemCardProps> = ({
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-1.5">
                             {getIcon(item.type)}
-                            <span className="text-[9px] text-muted uppercase font-bold tracking-wider">{item.type}</span>
+                            <span className="text-[11px] text-muted uppercase font-bold tracking-wider">{item.type}</span>
                         </div>
-                        <span className="text-[9px] text-muted">{formatTime(item.timestamp)}</span>
+                        <span className="text-[11px] text-muted">{formatTime(item.timestamp)}</span>
                     </div>
 
                     {/* Content */}
@@ -100,7 +100,7 @@ export const RecentItemCard: React.FC<RecentItemCardProps> = ({
                             ) : (
                                 <>
                                     <FileText size={isGallery ? 32 : 24} className="text-amber-400/50" />
-                                    <p className="text-[10px] text-muted px-4 text-center truncate w-full">
+                                    <p className="text-[12px] text-muted px-4 text-center truncate w-full">
                                         {item.content.split('/').pop() || t.recentCard.uncompressedFile}
                                     </p>
                                 </>
@@ -109,15 +109,15 @@ export const RecentItemCard: React.FC<RecentItemCardProps> = ({
                     ) : item.type === 'audio' ? (
                         <div className={`w-full rounded-lg bg-surface/50 border border-white/5 flex flex-col items-center justify-center gap-2 ${isGallery ? 'h-48' : 'h-32'}`}>
                             <Music size={isGallery ? 32 : 24} className="text-purple-400/50" />
-                            <p className="text-[10px] text-muted px-4 text-center truncate w-full">
+                            <p className="text-[12px] text-muted px-4 text-center truncate w-full">
                                 {item.content.split('/').pop() || t.recentCard.audioFile}
                             </p>
                         </div>
                     ) : item.type === 'location' ? (
                         <div className={`w-full rounded-lg bg-emerald-400/5 border border-emerald-400/20 flex flex-col items-center justify-center gap-2 ${isGallery ? 'h-48' : 'h-32'}`}>
                             <MapPin size={isGallery ? 32 : 24} className="text-emerald-400/50" />
-                            <p className="text-[10px] text-emerald-400/80 px-4 text-center font-bold">{t.recentCard.interactiveLocation}</p>
-                            <p className="text-[9px] text-muted px-4 text-center truncate w-full">{item.content}</p>
+                            <p className="text-[12px] text-emerald-400/80 px-4 text-center font-bold">{t.recentCard.interactiveLocation}</p>
+                            <p className="text-[11px] text-muted px-4 text-center truncate w-full">{item.content}</p>
                         </div>
                     ) : item.type === 'link' ? (
                         <div
@@ -139,12 +139,12 @@ export const RecentItemCard: React.FC<RecentItemCardProps> = ({
                             )}
                             <div className="space-y-1">
                                 {item.metadata?.siteName && (
-                                    <p className="text-primary text-[8px] font-bold uppercase tracking-wider">{item.metadata.siteName}</p>
+                                    <p className="text-primary text-[10px] font-bold uppercase tracking-wider">{item.metadata.siteName}</p>
                                 )}
-                                <p className={`font-medium text-white ${isGallery ? 'text-sm' : 'text-xs'} line-clamp-2 group-hover/link:text-primary transition-colors`}>
+                                <p className={`font-medium text-white ${isGallery ? 'text-[15px]' : 'text-[14px]'} line-clamp-2 group-hover/link:text-primary transition-colors`}>
                                     {item.metadata?.title || item.preview}
                                 </p>
-                                <p className={`text-muted truncate ${isGallery ? 'text-xs' : 'text-[10px]'}`}>{item.content}</p>
+                                <p className={`text-muted truncate ${isGallery ? 'text-xs' : 'text-[12px]'}`}>{item.content}</p>
                             </div>
                         </div>
                     ) : (
@@ -155,7 +155,7 @@ export const RecentItemCard: React.FC<RecentItemCardProps> = ({
 
                     {/* Target */}
                     <div className="mt-2 pt-2">
-                        <span className="text-[9px] text-muted truncate max-w-[100px] block">→ {item.targetName}</span>
+                        <span className="text-[11px] text-muted truncate max-w-[120px] block">→ {item.targetName}</span>
                     </div>
 
                     {/* Actions */}

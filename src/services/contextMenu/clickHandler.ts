@@ -5,6 +5,7 @@
  * i18n: getTranslations() ile çeviri desteği.
  */
 
+import { browser } from '../../utils/browser-api';
 import { StorageService } from '../storage';
 import { TelegramService } from '../telegram';
 import { RecentsService } from '../recents';
@@ -20,13 +21,11 @@ import { injectToast } from '../injectToast';
  * Context menu tıklama olayını işler
  */
 export async function onClicked(
-    info: chrome.contextMenus.OnClickData,
-    tab: chrome.tabs.Tab | undefined,
+    info: any,
+    tab: any,
     onMenuRebuild: () => void
 ): Promise<void> {
     const menuId = info.menuItemId.toString();
-
-
 
     // === 1. ADD DESTINATION ===
     if (menuId.endsWith('-add-destination')) {
@@ -59,7 +58,7 @@ export async function onClicked(
 
     // === 3. QUICK SEND HANDLER ===
     if (menuId.includes('-quick-')) {
-        const { recentTargets } = await chrome.storage.local.get('recentTargets');
+        const { recentTargets }: any = await browser.storage.local.get('recentTargets');
         if (!recentTargets || recentTargets.length === 0) return;
 
         const targetId = recentTargets[0];
@@ -87,8 +86,8 @@ export async function onClicked(
  */
 async function processSend(
     targetId: string,
-    info: chrome.contextMenus.OnClickData,
-    tab: chrome.tabs.Tab | undefined,
+    info: any,
+    tab: any,
     sendMode: 'file' | 'photo' | undefined,
     priorityType: string | undefined,
     onMenuRebuild: () => void
@@ -104,7 +103,7 @@ async function processSend(
     if (isImageRequestedButNotFound || isGenericCheck) {
         if (tab?.id) {
             try {
-                const media: any = await chrome.tabs.sendMessage(tab.id, { type: 'GET_CLICKED_MEDIA' });
+                const media: any = await browser.tabs.sendMessage(tab.id, { type: 'GET_CLICKED_MEDIA' });
 
                 if (media && media.src) {
                     if (!payload) payload = {};
@@ -156,7 +155,7 @@ async function processSend(
             }
             // Try to open the bot chat to help the user
             if (profile.username) {
-                chrome.tabs.create({ url: `https://t.me/${profile.username}` });
+                browser.tabs.create({ url: `https://t.me/${profile.username}` });
             }
             return;
         }

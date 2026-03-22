@@ -37,11 +37,11 @@ export const LogsView: React.FC<LogsViewProps> = ({ logs, onClear }) => {
     if (logs.length === 0) {
         return (
             <div className="flex-1 flex items-center justify-center px-4">
-                <div className="text-center py-10 px-6 flex flex-col items-center gap-4 bg-surface/20 rounded-2xl border border-white/5 w-full">
-                    <Terminal size={20} className="text-muted" />
-                    <div className="space-y-1">
-                        <p className="text-xs font-bold">{t.logs.noLogs}</p>
-                        <p className="text-[9px] text-muted leading-tight">{t.logs.noLogsHint}</p>
+                <div className="text-center py-12 px-6 flex flex-col items-center gap-4 w-full opacity-60">
+                    <Terminal size={24} className="text-muted" strokeWidth={1.5} />
+                    <div className="space-y-1.5 text-center">
+                        <p className="text-[15px] font-bold tracking-tight">{t.logs.noLogs}</p>
+                        <p className="text-[12px] text-muted leading-relaxed max-w-[260px] mx-auto">{t.logs.noLogsHint}</p>
                     </div>
                 </div>
             </div>
@@ -53,10 +53,10 @@ export const LogsView: React.FC<LogsViewProps> = ({ logs, onClear }) => {
             {/* Section Header - Sticky */}
             <div className="flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-sm py-2 z-10">
                 <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-muted uppercase tracking-widest">{t.logs.systemLogs}</span>
+                    <span className="text-[12px] font-bold text-muted uppercase tracking-widest">{t.logs.systemLogs}</span>
                     <button
                         onClick={onClear}
-                        className="text-[9px] font-bold text-muted/50 hover:text-danger hover:bg-danger/5 px-2 py-0.5 rounded-full border border-white/5 transition-all"
+                        className="text-[11px] font-bold text-muted/50 hover:text-danger hover:bg-danger/5 px-3 py-1 rounded-full border border-white/5 transition-all"
                     >
                         {t.logs.clearAll}
                     </button>
@@ -85,16 +85,16 @@ export const LogsView: React.FC<LogsViewProps> = ({ logs, onClear }) => {
                                 </div>
 
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[12px] font-bold text-white truncate">
+                                    <p className="text-[14px] font-bold text-white truncate">
                                         {log.message}
                                     </p>
                                     <div className="flex items-center gap-2 mt-0.5">
-                                        <span className="text-[9px] text-muted flex items-center gap-1">
-                                            <Clock size={8} />
+                                        <span className="text-[11px] text-muted flex items-center gap-1">
+                                            <Clock size={10} />
                                             {formatTime(log.timestamp)}
                                         </span>
                                         {log.targetName && (
-                                            <span className="text-[9px] text-primary/60 font-medium truncate">
+                                            <span className="text-[11px] text-primary/60 font-medium truncate">
                                                 • {log.targetName}
                                             </span>
                                         )}
@@ -113,9 +113,9 @@ export const LogsView: React.FC<LogsViewProps> = ({ logs, onClear }) => {
                             `}>
                                 <div className="overflow-hidden">
                                     <div className="px-3 pb-3 pt-1 border-t border-white/5">
-                                        <div className="bg-black/40 rounded-lg p-2.5 flex flex-col gap-1.5">
-                                            <span className="text-[8px] font-bold text-muted uppercase tracking-widest">{t.logs.details || 'TECHNICAL DETAILS'}</span>
-                                            <p className="text-[10px] text-muted font-mono break-all leading-relaxed tracking-tight">
+                                        <div className="bg-black/40 rounded-lg p-2.5 flex flex-col gap-1.5 text-white">
+                                            <span className="text-[11px] font-bold text-muted uppercase tracking-widest">{t.logs.details || 'TECHNICAL DETAILS'}</span>
+                                            <p className="text-[12px] text-muted font-mono break-all leading-relaxed tracking-tight">
                                                 {log.details || t.logs.noDetails || 'No technical details available.'}
                                             </p>
                                         </div>

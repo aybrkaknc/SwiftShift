@@ -1,24 +1,26 @@
+import { browser } from '../utils/browser-api';
 import { LogService } from '../services/logService';
 import { setCachedLocale } from '../utils/i18nUtils';
 import { ContextMenuManager } from '../services/contextMenu/menuBuilder';
 
 // Global Locale Init (Async - Restore language on wake up)
-chrome.storage.local.get('swiftshift_locale', (res) => {
+(async () => {
+    const res = await browser.storage.local.get('swiftshift_locale');
     if (res && res.swiftshift_locale) {
-        setCachedLocale(res.swiftshift_locale);
+        setCachedLocale(res.swiftshift_locale as any);
     }
-});
+})();
 
 // === LIFECYCLE EVENTS ===
 
 /**
  * Extension Kurulduğunda
  */
-chrome.runtime.onInstalled.addListener(async (details) => {
+browser.runtime.onInstalled.addListener(async (details) => {
     // 1. Dili yükle
-    const localeData = await chrome.storage.local.get('swiftshift_locale');
+    const localeData = await browser.storage.local.get('swiftshift_locale');
     if (localeData.swiftshift_locale) {
-        setCachedLocale(localeData.swiftshift_locale);
+        setCachedLocale(localeData.swiftshift_locale as any);
     }
 
     // 2. Menüyü oluştur
@@ -32,18 +34,18 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     });
 
     if (details.reason === 'install') {
-        chrome.tabs.create({ url: 'welcome.html' });
+        browser.tabs.create({ url: 'welcome.html' });
     }
 });
 
 /**
  * Tarayıcı Başlatıldığında
  */
-chrome.runtime.onStartup.addListener(async () => {
+browser.runtime.onStartup.addListener(async () => {
     // 1. Dili yükle
-    const localeData = await chrome.storage.local.get('swiftshift_locale');
+    const localeData = await browser.storage.local.get('swiftshift_locale');
     if (localeData.swiftshift_locale) {
-        setCachedLocale(localeData.swiftshift_locale);
+        setCachedLocale(localeData.swiftshift_locale as any);
     }
 
     // 2. Menüyü oluştur
@@ -51,17 +53,17 @@ chrome.runtime.onStartup.addListener(async () => {
 });
 
 // === CONTEXT MENU EVENTS ===
-chrome.contextMenus.onClicked.addListener((info, tab) => {
-    ContextMenuManager.onClicked(info, tab);
+browser.contextMenus.onClicked.addListener((info, tab) => {
+    ContextMenuManager.onClicked(info as any, tab);
 });
 
 // === MESSAGE LISTENER ===
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+browser.runtime.onMessage.addListener((message: any, _sender, sendResponse) => {
     // 1. REFRESH_MENU
     if (message.type === 'REFRESH_MENU') {
         ContextMenuManager.init();
         sendResponse({ success: true });
-        return true;
+        return true as any;
     }
 
     // 2. LOCALE_CHANGED
@@ -69,11 +71,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         setCachedLocale(message.locale);
         ContextMenuManager.init(); // Dil değiştiği için menüyü yeniden oluştur
         sendResponse({ success: true });
-        return true;
+        return true as any;
     }
 
     // 3. CAPTURE_COMPLETE
     if (message && message.type === "CAPTURE_COMPLETE") {
-        return true; // Async response
+        return true as any; // Async response
     }
 });
