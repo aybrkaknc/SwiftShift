@@ -4,6 +4,10 @@ SwiftShift is a high-performance browser extension designed to instantly bridge 
 
 Now officially supports both **Google Chrome** and **Mozilla Firefox**.
 
+## 📥 Install from Browser Stores
+- **Chrome Web Store:** [Get SwiftShift for Chrome](https://chromewebstore.google.com/detail/swiftshift/hgfbelpjimpdhpabcmnlefnjlfhddffb)
+- **Firefox Add-ons:** [Get SwiftShift for Firefox](https://addons.mozilla.org/en-US/firefox/addon/swiftshift/)
+
 ---
 
 ## ✨ Features (English)
@@ -45,6 +49,10 @@ npm install
 SwiftShift, web içeriklerini anında Telegram'a köprülemek için tasarlanmış yüksek performanslı bir tarayıcı eklentisidir. Modern arayüzü ve hiyerarşik hedef yönetimi ile bağlantıları, seçimleri, ekran görüntülerini ve konumları kanallarınıza, gruplarınıza veya forum konularınıza sorunsuz bir şekilde paylaşmanızı sağlar.
 
 Artık resmi olarak hem **Google Chrome** hem de **Mozilla Firefox**'u desteklemektedir.
+
+## 📥 Mağazadan Yükle
+- **Chrome Web Mağazası:** [Chrome için SwiftShift'i İndir](https://chromewebstore.google.com/detail/swiftshift/hgfbelpjimpdhpabcmnlefnjlfhddffb)
+- **Firefox Eklentileri:** [Firefox için SwiftShift'i İndir](https://addons.mozilla.org/en-US/firefox/addon/swiftshift/)
 
 ## ✨ Özellikler (Türkçe)
 
