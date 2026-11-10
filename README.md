@@ -1,77 +1,129 @@
-# SwiftShift 🚀
+<a id="readme-top"></a>
 
-SwiftShift is a high-performance browser extension designed to instantly bridge web content to Telegram. Featuring a modern interface and hierarchical target management, it allows seamless sharing of links, selections, captures, and locations to channels, groups, and specific forum topics.
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
 
-Now officially supports both **Google Chrome** and **Mozilla Firefox**.
+<br />
+<div align="center">
+  <h3 align="center">SwiftShift</h3>
 
-## 📥 Install from Browser Stores
-- **Chrome Web Store:** [Get SwiftShift for Chrome](https://chromewebstore.google.com/detail/swiftshift/hgfbelpjimpdhpabcmnlefnjlfhddffb)
-- **Firefox Add-ons:** [Get SwiftShift for Firefox](https://addons.mozilla.org/en-US/firefox/addon/swiftshift/)
+  <p align="center">
+    A browser extension that instantly sends web content (links, selections, captures and locations) to Telegram channels, groups and forum topics.
+    <br />
+    <a href="https://chromewebstore.google.com/detail/swiftshift/hgfbelpjimpdhpabcmnlefnjlfhddffb"><strong>Get it for Chrome</strong></a>
+    <br />
+    <br />
+    <a href="https://addons.mozilla.org/en-US/firefox/addon/swiftshift/">Get it for Firefox</a>
+    &middot;
+    <a href="https://github.com/aybrkaknc/SwiftShift/issues/new?labels=bug">Report Bug</a>
+    &middot;
+    <a href="https://github.com/aybrkaknc/SwiftShift/issues/new?labels=enhancement">Request Feature</a>
+  </p>
 
----
+  <p align="center">
+    <a href="README.md">English</a> | <a href="README.tr.md">Türkçe</a>
+  </p>
+</div>
 
-## ✨ Features (English)
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-project">About The Project</a>
+      <ul>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#built-with">Built With</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#getting-started">Getting Started</a>
+      <ul>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#installation--build">Installation & Build</a></li>
+      </ul>
+    </li>
+    <li><a href="#contact">Contact</a></li>
+  </ol>
+</details>
 
-- **Dual-Browser Support:** Native builds for Chrome (Manifest V3) and Firefox (Manifest V3).
-- **Hierarchical Destinations:** Organize forum topics under their parent channels/groups.
-- **Modern UI:** A clean, high-end interface built with Tailwind CSS and premium typography.
-- **Page & Region Capture:** Capture the full visible area or a specific mouse-selected region as PNG.
-- **Smart Location Detection:** Automatically detects Google Maps coordinates and sends them as Telegram locations.
-- **Secure Handling:** Bot tokens and configurations are stored locally and never logged.
-- **Premium Animations:** Smooth slide-in/out transitions for notifications and modals.
+## About The Project
 
-## 🛠️ Installation & Build
+SwiftShift is a high-performance browser extension for bridging web content to Telegram. It has a modern interface and hierarchical target management, so you can share links, selections, captures and locations to channels, groups and specific forum topics.
 
-### 1. Requirements
-- Node.js (v18+)
-- npm
+It supports both Google Chrome and Mozilla Firefox.
 
-### 2. Setup
-```bash
-git clone https://github.com/aybrkaknc/SwiftShift.git
-cd SwiftShift
-npm install
-```
+### Features
 
-### 3. Build for Browsers
-- **For Chrome:** `npm run build:chrome` (Output: `dist/chrome`)
-- **For Firefox:** `npm run build:firefox` (Output: `dist/firefox`)
-- **Both:** `npm run build:all`
+- **Dual-Browser Support**: Native builds for Chrome (Manifest V3) and Firefox (Manifest V3).
+- **Hierarchical Destinations**: Organize forum topics under their parent channels and groups.
+- **Modern UI**: Clean interface built with Tailwind CSS.
+- **Page and Region Capture**: Capture the visible area or a region selected with the mouse as PNG.
+- **Smart Location Detection**: Detects Google Maps coordinates and sends them as Telegram locations.
+- **Secure Handling**: Bot tokens and configuration are stored locally and never logged.
+- **Animations**: Smooth slide-in and slide-out transitions for notifications and modals.
 
-### 4. Loading the Extension
-- **Chrome:** Go to `chrome://extensions/`, enable Developer Mode, click "Load unpacked", and select `dist/chrome`.
-- **Firefox:** Go to `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on...", and select `dist/firefox/manifest.json`.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
----
+### Built With
 
-# SwiftShift 🚀 (Türkçe)
+* [![Tailwind CSS][Tailwind-shield]][Tailwind-url]
+* [![Vite][Vite-shield]][Vite-url]
+* [![Chrome][Chrome-shield]][Chrome-url]
+* [![Firefox][Firefox-shield]][Firefox-url]
 
-SwiftShift, web içeriklerini anında Telegram'a köprülemek için tasarlanmış yüksek performanslı bir tarayıcı eklentisidir. Modern arayüzü ve hiyerarşik hedef yönetimi ile bağlantıları, seçimleri, ekran görüntülerini ve konumları kanallarınıza, gruplarınıza veya forum konularınıza sorunsuz bir şekilde paylaşmanızı sağlar.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-Artık resmi olarak hem **Google Chrome** hem de **Mozilla Firefox**'u desteklemektedir.
+## Getting Started
 
-## 📥 Mağazadan Yükle
-- **Chrome Web Mağazası:** [Chrome için SwiftShift'i İndir](https://chromewebstore.google.com/detail/swiftshift/hgfbelpjimpdhpabcmnlefnjlfhddffb)
-- **Firefox Eklentileri:** [Firefox için SwiftShift'i İndir](https://addons.mozilla.org/en-US/firefox/addon/swiftshift/)
+### Prerequisites
 
-## ✨ Özellikler (Türkçe)
+* Node.js (v18+)
+* npm
 
-- **Çift Tarayıcı Desteği:** Chrome (Manifest V3) ve Firefox (Manifest V3) için yerel yapılar.
-- **Hiyerarşik Hedefler:** Forum konularını ana kanallarının/gruplarının altında düzenleyin.
-- **Modern Arayüz:** Tailwind CSS ve premium tipografi ile oluşturulmuş temiz, üst düzey arayüz.
-- **Sayfa ve Bölge Yakalama:** Görünür alanı veya fare ile seçilen özel bir bölgeyi PNG olarak yakalayın.
-- **Akıllı Konum Algılama:** Google Haritalar koordinatlarını otomatik olarak algılar ve Telegram konumu olarak gönderir.
-- **Güvenli İşleme:** Bot token'ları ve konfigürasyonlar yerel olarak saklanır ve asla loglanmaz.
-- **Premium Animasyonlar:** Bildirimler ve modallar için pürüzsüz kayma geçişleri.
+### Installation & Build
 
-## 🛠️ Kurulum ve Derleme
-- Bağımlılıkları yükleyin: `npm install`
-- Chrome için derleyin: `npm run build:chrome`
-- Firefox için derleyin: `npm run build:firefox`
+1. Clone the repository and install dependencies
+   ```sh
+   git clone https://github.com/aybrkaknc/SwiftShift.git
+   cd SwiftShift
+   npm install
+   ```
+2. Build for a browser
+   ```sh
+   npm run build:chrome    # output: dist/chrome
+   npm run build:firefox   # output: dist/firefox
+   npm run build:all       # both
+   ```
+3. Load the extension
+   * **Chrome**: open `chrome://extensions/`, enable Developer Mode, click "Load unpacked" and select `dist/chrome`.
+   * **Firefox**: open `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on..." and select `dist/firefox/manifest.json`.
 
----
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## 📜 License
-This project is licensed under the MIT License.
+## Contact
 
-Built with ❤️ by [Ayberk](https://github.com/aybrkaknc) for a faster web-to-Telegram experience.
+Ayberk - [@aybrkaknc](https://github.com/aybrkaknc)
+
+Project Link: [https://github.com/aybrkaknc/SwiftShift](https://github.com/aybrkaknc/SwiftShift)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- MARKDOWN LINKS & IMAGES -->
+[contributors-shield]: https://img.shields.io/github/contributors/aybrkaknc/SwiftShift.svg?style=for-the-badge
+[contributors-url]: https://github.com/aybrkaknc/SwiftShift/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/aybrkaknc/SwiftShift.svg?style=for-the-badge
+[forks-url]: https://github.com/aybrkaknc/SwiftShift/network/members
+[stars-shield]: https://img.shields.io/github/stars/aybrkaknc/SwiftShift.svg?style=for-the-badge
+[stars-url]: https://github.com/aybrkaknc/SwiftShift/stargazers
+[issues-shield]: https://img.shields.io/github/issues/aybrkaknc/SwiftShift.svg?style=for-the-badge
+[issues-url]: https://github.com/aybrkaknc/SwiftShift/issues
+[Tailwind-shield]: https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white
+[Tailwind-url]: https://tailwindcss.com/
+[Vite-shield]: https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white
+[Vite-url]: https://vitejs.dev/
+[Chrome-shield]: https://img.shields.io/badge/Chrome-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white
+[Chrome-url]: https://chromewebstore.google.com/detail/swiftshift/hgfbelpjimpdhpabcmnlefnjlfhddffb
+[Firefox-shield]: https://img.shields.io/badge/Firefox-FF7139?style=for-the-badge&logo=firefoxbrowser&logoColor=white
+[Firefox-url]: https://addons.mozilla.org/en-US/firefox/addon/swiftshift/
